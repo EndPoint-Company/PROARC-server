@@ -23,7 +23,7 @@ def handle_client(client_socket):
 
     print(f"[*] Received: {request}")
     
-    conn = odbc.connect('Driver={SQL Server};'
+    conn = odbc.connect('Driver={libmsodbcsql-17.10.so.6.1};'
                         'Server=34.151.220.250;'
                         'Database=maconha2;'
                         'Trusted_Connection=no;'
@@ -31,10 +31,7 @@ def handle_client(client_socket):
                         'pwd=proarc;')
     
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM maconha2.dbo.TESTE")
-    a = cursor.fetchall()
-    for resultado in a:
-        print(resultado)
+    cursor.execute(request)
     cursor.commit()
     
     client_socket.close()
