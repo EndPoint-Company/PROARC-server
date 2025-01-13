@@ -1,7 +1,8 @@
 import socket 
 import threading 
+import pyodbc as odbc
 
-bind_ip = "34.95.181.227" 
+bind_ip = ""
 bind_port = 9999
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
@@ -21,6 +22,21 @@ def handle_client(client_socket):
         request += msg.decode("utf-8")
 
     print(f"[*] Received: {request}")
+    
+    conn = odbc.connect('Driver={SQL Server};'
+                        'Server=34.151.220.250;'
+                        'Database=maconha2;'
+                        'Trusted_Connection=no;'
+                        'uid=sqlserver;'
+                        'pwd=proarc;')
+    
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM maconha2.dbo.TESTE")
+    a = cursor.fetchall()
+    for resultado in a:
+        print(resultado)
+    cursor.commit()
+    
     client_socket.close()
 
 while True: 

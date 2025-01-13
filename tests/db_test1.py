@@ -8,7 +8,7 @@ def main():
                         'uid=sqlserver;'
                         'pwd=proarc;')
     cursor = conn.cursor()
-    a = cursor.execute("SELECT * FROM maconha2.dbo.TESTE")
+    cursor.execute("SELECT * FROM maconha2.dbo.TESTE")
     a = cursor.fetchall()
     for resultado in a:
         print(resultado)
