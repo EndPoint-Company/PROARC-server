@@ -56,7 +56,7 @@ def send_salt_to_client(client_socket):
 
     print(a)
 
-    data = pickle.dumps(a)
+    data = pickle.dumps([tuple(row) for row in a])
 
     print(data)
 
