@@ -18,10 +18,15 @@ def handle_client(client_socket):
     send_salt_to_client(client_socket)
 
     while True:
-        msg = client_socket.recv(1024)
-        if len(msg) <= 0:
+        while True:
+            msg = client_socket.recv(1024)
+            if len(msg) <= 0:
+                break
+            request += msg.decode("utf-8")
+        if (check_password(request)):
+            client_socket.send(bytes("OK"))
             break
-        request += msg.decode("utf-8")
+        client_socket.send(bytes("NOT OK")) 
 
     print(f"[*] Received: {request}")
 
@@ -39,6 +44,26 @@ def send_request_to_db(request):
     cursor = conn.cursor()
     cursor.execute(request)
     cursor.commit()
+
+def check_password(hashed_password):
+    import login
+
+    conn = odbc.connect('Driver={/opt/microsoft/msodbcsql17/lib64/libmsodbcsql-17.10.so.6.1};'
+                            'Server=34.151.220.250;'
+                            'Database=maconha2;'
+                            'Trusted_Connection=no;'
+                            'uid=sqlserver;'
+                            'pwd=proarc;')
+        
+    cursor = conn.cursor()
+    cursor.execute("SELECT hash_and_salt FROM UsuariosTeste1")
+    a = cursor.fetchall()
+
+    for hash_and_salt in a:
+        if hash_and_salt[0] == hashed_password:
+            return True
+
+    return False
 
 def send_salt_to_client(client_socket):
     import json
