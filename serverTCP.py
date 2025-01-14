@@ -41,6 +41,8 @@ def send_request_to_db(request):
     cursor.commit()
 
 def send_salt_to_client(client_socket):
+    import pickle
+
     conn = odbc.connect('Driver={/opt/microsoft/msodbcsql17/lib64/libmsodbcsql-17.10.so.6.1};'
                         'Server=34.151.220.250;'
                         'Database=maconha2;'
@@ -52,9 +54,9 @@ def send_salt_to_client(client_socket):
     cursor.execute("SELECT salt FROM UsuariosTeste1")
     a = cursor.fetchall()
 
-    a = [bytes(item, 'utf-8') for item in a]
+    data = pickle.dumps(a)
 
-    client_socket.send(bytes(a))
+    client_socket.send(data)
     
     cursor.commit()
 
