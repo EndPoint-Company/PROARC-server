@@ -41,7 +41,7 @@ def send_request_to_db(request):
     cursor.commit()
 
 def send_salt_to_client(client_socket):
-    import pickle
+    import json
 
     conn = odbc.connect('Driver={/opt/microsoft/msodbcsql17/lib64/libmsodbcsql-17.10.so.6.1};'
                         'Server=34.151.220.250;'
@@ -56,7 +56,7 @@ def send_salt_to_client(client_socket):
 
     print(a)
 
-    data = pickle.dumps([tuple(row) for row in a])
+    data = json.dumps([tuple(row) for row in a])
 
     print(data)
 
