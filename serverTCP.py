@@ -52,6 +52,8 @@ def send_salt_to_client(client_socket):
     cursor.execute("SELECT salt FROM UsuariosTeste1")
     a = cursor.fetchall()
 
+    a = [bytes(item, 'utf-8') for item in a]
+
     client_socket.send(bytes(a))
     
     cursor.commit()
