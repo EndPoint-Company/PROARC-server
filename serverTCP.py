@@ -60,7 +60,7 @@ def send_salt_to_client(client_socket):
 
     print(data)
 
-    client_socket.send(data)
+    client_socket.send(data.encode("utf-8"))
     
     cursor.commit()
 
