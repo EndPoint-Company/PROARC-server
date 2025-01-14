@@ -15,6 +15,8 @@ print(f"[+] Listening on port {bind_ip} : {bind_port}")
 def handle_client(client_socket): 
     request = ''
 
+    send_salt_to_client(client_socket)
+
     while True:
         msg = client_socket.recv(1024)
         if len(msg) <= 0:
@@ -22,7 +24,11 @@ def handle_client(client_socket):
         request += msg.decode("utf-8")
 
     print(f"[*] Received: {request}")
-    
+
+    client_socket.close()
+
+
+def send_request_to_db(request):
     conn = odbc.connect('Driver={/opt/microsoft/msodbcsql17/lib64/libmsodbcsql-17.10.so.6.1};'
                         'Server=34.151.220.250;'
                         'Database=maconha2;'
@@ -33,8 +39,22 @@ def handle_client(client_socket):
     cursor = conn.cursor()
     cursor.execute(request)
     cursor.commit()
+
+def send_salt_to_client(client_socket):
+    conn = odbc.connect('Driver={/opt/microsoft/msodbcsql17/lib64/libmsodbcsql-17.10.so.6.1};'
+                        'Server=34.151.220.250;'
+                        'Database=maconha2;'
+                        'Trusted_Connection=no;'
+                        'uid=sqlserver;'
+                        'pwd=proarc;')
     
-    client_socket.close()
+    cursor = conn.cursor()
+    cursor.execute("SELECT salt FROM UsuariosTeste1")
+    a = cursor.fetchall()
+
+    client_socket.send(a.encode("utf-8"))
+    
+    cursor.commit()
 
 while True: 
     client, addr = server.accept() 
