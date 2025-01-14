@@ -23,7 +23,7 @@ def handle_client(client_socket):
 
     print(f"[*] Received: {request}")
     
-    conn = odbc.connect('Driver={libmsodbcsql-17.10.so.6.1};'
+    conn = odbc.connect('Driver={/opt/microsoft/msodbcsql17/lib64/libmsodbcsql-17.10.so.6.1};'
                         'Server=34.151.220.250;'
                         'Database=maconha2;'
                         'Trusted_Connection=no;'
