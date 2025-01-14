@@ -23,6 +23,9 @@ def handle_client(client_socket):
             if len(msg) <= 0:
                 break
             request += msg.decode("utf-8")
+
+        print(request)
+
         if (check_password(request)):
             client_socket.send(bytes("OK"))
             break
@@ -79,11 +82,7 @@ def send_salt_to_client(client_socket):
     cursor.execute("SELECT salt FROM UsuariosTeste1")
     a = cursor.fetchall()
 
-    print(a)
-
     data = json.dumps([tuple(row) for row in a])
-
-    print(data)
 
     client_socket.send(data.encode("utf-8"))
     
