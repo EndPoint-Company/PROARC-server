@@ -54,7 +54,11 @@ def send_salt_to_client(client_socket):
     cursor.execute("SELECT salt FROM UsuariosTeste1")
     a = cursor.fetchall()
 
+    print(a)
+
     data = pickle.dumps(a)
+
+    print(data)
 
     client_socket.send(data)
     
