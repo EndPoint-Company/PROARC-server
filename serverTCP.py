@@ -14,12 +14,16 @@ print(f"[+] Listening on port {bind_ip} : {bind_port}")
 
 def handle_client(client_socket): 
     request = ''
+    client_socket.settimeout(5)
 
     send_salt_to_client(client_socket)
 
     while True:
         while True:
-            msg = client_socket.recv(1024)
+            try:
+                msg = client_socket.recv(8)
+            except socket.timeout:
+                break
             print(msg)
             if len(msg) <= 0:
                 break
