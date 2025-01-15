@@ -33,9 +33,9 @@ def handle_client(client_socket):
         print(request)
 
         if (check_password(request)):
-            client_socket.send(bytes("OK"))
+            client_socket.send(bytes("OK").encode("utf-8"))
             break
-        client_socket.send(bytes("NOT OK")) 
+        client_socket.send("NOT OK".encode("utf-8")) 
 
     print(f"[*] Received: {request}")
 
@@ -69,6 +69,7 @@ def check_password(hashed_password):
     a = cursor.fetchall()
 
     for hash_and_salt in a:
+        print("hash_and_salt: " + hash_and_salt[0])
         if hash_and_salt[0] == hashed_password:
             return True
 
