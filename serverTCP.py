@@ -32,8 +32,10 @@ def handle_client(client_socket):
     
     cursor = conn.cursor()
     cursor.execute(request)
+    a = cursor.fetchall()
+
     cursor.commit()
-    
+    client_socket.send(bytes(str(a), "utf-8"))
     client_socket.close()
 
 while True: 
