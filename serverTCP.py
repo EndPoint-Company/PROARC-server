@@ -21,7 +21,7 @@ def handle_client(client_socket):
     while True:
         while True:
             try:
-                msg = client_socket.recv(8)
+                msg = client_socket.recv(1024)
             except socket.timeout:
                 break
             print(msg)
