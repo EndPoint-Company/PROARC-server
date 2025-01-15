@@ -22,7 +22,8 @@ def handle_client(client_socket):
             msg = client_socket.recv(1024)
             if len(msg) <= 0:
                 break
-            request += msg.decode("utf-8")
+            #request += msg.decode("utf-8")
+            request += msg.hex("-").upper()
 
         print(request)
 
