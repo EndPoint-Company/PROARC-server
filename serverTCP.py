@@ -20,6 +20,7 @@ def handle_client(client_socket):
     while True:
         while True:
             msg = client_socket.recv(1024)
+            print(msg)
             if len(msg) <= 0:
                 break
             #request += msg.decode("utf-8")
