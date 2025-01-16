@@ -73,7 +73,49 @@ def send_request_to_db(request):
     
     cursor = conn.cursor()
     cursor.execute(request)
+    a = cursor.fetchall()
+
     cursor.commit()
+
+def check_password(hashed_password):
+    conn = odbc.connect('Driver={/opt/microsoft/msodbcsql17/lib64/libmsodbcsql-17.10.so.6.1};'
+                            'Server=34.151.220.250;'
+                            'Database=maconha2;'
+                            'Trusted_Connection=no;'
+                            'uid=sqlserver;'
+                            'pwd=proarc;')
+        
+    cursor = conn.cursor()
+    cursor.execute("SELECT hash_and_salt FROM UsuariosTeste1")
+    a = cursor.fetchall()
+
+    for hash_and_salt in a:
+        print("hash_and_salt: " + hash_and_salt[0])
+        if hash_and_salt[0] == hashed_password:
+            return True
+
+    return False
+
+def send_salt_to_client(client_socket):
+    import json
+
+    conn = odbc.connect('Driver={/opt/microsoft/msodbcsql17/lib64/libmsodbcsql-17.10.so.6.1};'
+                        'Server=34.151.220.250;'
+                        'Database=maconha2;'
+                        'Trusted_Connection=no;'
+                        'uid=sqlserver;'
+                        'pwd=proarc;')
+    
+    cursor = conn.cursor()
+    cursor.execute("SELECT salt FROM UsuariosTeste1")
+    a = cursor.fetchall()
+
+    data = json.dumps([tuple(row) for row in a])
+
+    client_socket.send(data.encode("utf-8"))
+    
+    cursor.commit()
+
 
 def check_password(hashed_password):
     conn = odbc.connect('Driver={/opt/microsoft/msodbcsql17/lib64/libmsodbcsql-17.10.so.6.1};'
