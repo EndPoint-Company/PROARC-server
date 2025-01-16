@@ -13,7 +13,7 @@ server.listen()
 print(f"[+] Listening on {bind_ip}:{bind_port}")
 
 db_config = {
-    'Driver': '{SQL Server}',
+    'Driver': '{/opt/microsoft/msodbcsql17/lib64/libmsodbcsql-17.10.so.6.1}',
     'Server': '34.151.220.250',
     'Database': 'maconha2',
     'Trusted_Connection': 'no',
@@ -47,6 +47,20 @@ def handle_client(client_socket):
             query = "SELECT nome, descricao FROM Motivos WHERE nome = ?"
             results = execute_query(query, (nome,))
             response = {"motivo": results[0] if results else None}
+            print(response)
+
+        elif action == "get_motivo_id":
+            id = request.get("id")
+            query = "SELECT nome, descricao FROM Motivos WHERE motivo_id = ?"
+            results = execute_query(query, (id,))
+            response = {"motivo": results[0] if results else None}
+                             
+        elif action == "get_id_motivo":
+            nome = request.get("nome")
+            query = "SELECT motivo_id FROM Motivos WHERE nome = ?"
+            results = execute_query(query, (nome,))
+            
+            response = {"id": results[0] if results else None}
             print(response)
 
         elif action == "get_all_motivos":
