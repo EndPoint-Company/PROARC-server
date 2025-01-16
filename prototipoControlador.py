@@ -49,6 +49,20 @@ def handle_client(client_socket):
             response = {"motivo": results[0] if results else None}
             print(response)
 
+        elif action == "get_motivo_id":
+            id = request.get("id")
+            query = "SELECT nome, descricao FROM Motivos WHERE motivo_id = ?"
+            results = execute_query(query, (id,))
+            response = {"motivo": results[0] if results else None}
+                             
+        elif action == "get_id_motivo":
+            nome = request.get("nome")
+            query = "SELECT motivo_id FROM Motivos WHERE nome = ?"
+            results = execute_query(query, (nome,))
+            
+            response = {"id": results[0] if results else None}
+            print(response)
+
         elif action == "get_all_motivos":
             query = "SELECT nome, descricao FROM Motivos"
             results = execute_query(query)
