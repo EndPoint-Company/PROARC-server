@@ -12,25 +12,10 @@ server.listen()
 
 print(f"[+] Listening on port {bind_ip} : {bind_port}")                            
 
-def handle_client_db_no_return(client_socket): 
-    request = ''
-    client_socket.settimeout(5)
+def handle_client_db(client_socket): 
+    import controladores
 
-    while True:
-        try:
-            msg = client_socket.recv(1024)
-        except socket.timeout:
-            break
-        print(msg)
-        if len(msg) <= 0:
-            break
-        request += msg.decode("utf-8")
-
-    send_request_to_db(request)
-
-    print(f"[*] Received: {request}")
-
-    client_socket.close()
+    controladores.handle_client(client_socket)
 
 
 def handle_client_pwd(client_socket): 
@@ -66,7 +51,7 @@ def handle_client_pwd(client_socket):
 def send_request_to_db(request):
     conn = odbc.connect('Driver={/opt/microsoft/msodbcsql17/lib64/libmsodbcsql-17.10.so.6.1};'
                         'Server=34.151.220.250;'
-                        'Database=maconha2;'
+                        'Database=testando1;'
                         'Trusted_Connection=no;'
                         'uid=sqlserver;'
                         'pwd=proarc;')
@@ -80,7 +65,7 @@ def send_request_to_db(request):
 def check_password(hashed_password):
     conn = odbc.connect('Driver={/opt/microsoft/msodbcsql17/lib64/libmsodbcsql-17.10.so.6.1};'
                             'Server=34.151.220.250;'
-                            'Database=maconha2;'
+                            'Database=testando1;'
                             'Trusted_Connection=no;'
                             'uid=sqlserver;'
                             'pwd=proarc;')
@@ -101,7 +86,7 @@ def send_salt_to_client(client_socket):
 
     conn = odbc.connect('Driver={/opt/microsoft/msodbcsql17/lib64/libmsodbcsql-17.10.so.6.1};'
                         'Server=34.151.220.250;'
-                        'Database=maconha2;'
+                        'Database=testando1;'
                         'Trusted_Connection=no;'
                         'uid=sqlserver;'
                         'pwd=proarc;')
@@ -120,7 +105,7 @@ def send_salt_to_client(client_socket):
 def check_password(hashed_password):
     conn = odbc.connect('Driver={/opt/microsoft/msodbcsql17/lib64/libmsodbcsql-17.10.so.6.1};'
                             'Server=34.151.220.250;'
-                            'Database=maconha2;'
+                            'Database=testando1;'
                             'Trusted_Connection=no;'
                             'uid=sqlserver;'
                             'pwd=proarc;')
@@ -143,11 +128,9 @@ while True:
 
     r = client.recv(8).decode("utf-8")
 
-    if (r == "DBN"):
-        client_handler = threading.Thread(target=handle_client_db_no_return, args=(client,))
+    if (r == "DB"):
+        client_handler = threading.Thread(target=handle_client_db, args=(client,))
         client_handler.start() 
-    if (r == "DBR"):
-        pass # TODO
     if (r == "AUTH"):
         client_handler = threading.Thread(target=handle_client_pwd, args=(client,))
         client_handler.start()

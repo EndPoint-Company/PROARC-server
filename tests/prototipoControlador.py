@@ -15,7 +15,7 @@ print(f"[+] Listening on {bind_ip}:{bind_port}")
 db_config = {
     'Driver': '{/opt/microsoft/msodbcsql17/lib64/libmsodbcsql-17.10.so.6.1}',
     'Server': '34.151.220.250',
-    'Database': 'maconha2',
+    'Database': 'testando1',
     'Trusted_Connection': 'no',
     'uid': 'sqlserver',
     'pwd': 'proarc'
@@ -42,16 +42,17 @@ def handle_client(client_socket):
         action = request.get("action")
         response = {}
 
+        # MOTIVO
         if action == "get_motivo":
             nome = request.get("nome")
-            query = "SELECT nome, descricao FROM Motivos WHERE nome = ?"
+            query = "SELECT nome FROM Motivos WHERE nome = ?"
             results = execute_query(query, (nome,))
             response = {"motivo": results[0] if results else None}
             print(response)
 
         elif action == "get_motivo_id":
             id = request.get("id")
-            query = "SELECT nome, descricao FROM Motivos WHERE motivo_id = ?"
+            query = "SELECT nome FROM Motivos WHERE motivo_id = ?"
             results = execute_query(query, (id,))
             response = {"motivo": results[0] if results else None}
                              
@@ -64,15 +65,15 @@ def handle_client(client_socket):
             print(response)
 
         elif action == "get_all_motivos":
-            query = "SELECT nome, descricao FROM Motivos"
+            query = "SELECT nome FROM Motivos"
             results = execute_query(query)
             response = {"motivos": results}
             print(response)
 
         elif action == "add_motivo":
             motivo = request.get("motivo")
-            query = "INSERT INTO Motivos (nome, descricao) VALUES (?, ?)"
-            execute_query(query, (motivo["Nome"], motivo["Descricao"]))
+            query = "INSERT INTO Motivos (nome) VALUES (?)"
+            execute_query(query, (motivo["Nome"], ))
             response = {"status": "success"}
 
         elif action == "remove_motivo":
@@ -84,10 +85,51 @@ def handle_client(client_socket):
         elif action == "update_motivo":
             nome = request.get("nome")
             novo_nome = request.get("novoNome")
-            nova_descricao = request.get("novaDescricao")
-            query = "UPDATE Motivos SET nome = ?, descricao = ? WHERE nome = ?"
-            execute_query(query, (novo_nome or nome, nova_descricao or "", nome))
+            query = "UPDATE Motivos SET nome = ? WHERE nome = ?"
+            execute_query(query, (novo_nome or nome, nome))
             response = {"status": "success"}
+        # MOTIVO END
+        # RECLAMADO
+        elif action == "get_reclamado":
+            nome = request.get("nome")
+            query = "SELECT nome, cpf, cnpj, email, rua, bairro, cidade, uf FROM Reclamados WHERE nome = ?"
+            results = execute_query(query, (nome,))
+            response = {"reclamado": results[0] if results else None}
+            print(response)
+
+        elif action == "get_reclamado_id":
+            id = request.get("id")
+            query = "SELECT nome, cpf, cnpj, email, rua, bairro, cidade, uf FROM Reclamados WHERE reclamado_id = ?"
+            results = execute_query(query, (id,))
+            response = {"reclamado": results[0] if results else None}
+        
+        elif action == "get_all_reclamados":
+            query = "SELECT nome, cpf, cnpj, email, rua, bairro, cidade, uf FROM Reclamados"
+            results = execute_query(query)
+            response = {"reclamados": results}
+            print(response)
+
+        elif action == "add_reclamado":
+            reclamado = request.get("reclamado")
+            query = "INSERT INTO Reclamados (nome, cpf, cnpj, email, rua, bairro, cidade, uf) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+            execute_query(query, (reclamado["Nome"], reclamado["Cpf"], reclamado["Cnpj"], reclamado["Email"], reclamado["Rua"], reclamado["Bairro"], reclamado["Cidade"], reclamado["Uf"]))
+            response = {"status": "success"}
+
+        elif action == "remove_reclamado":
+            nome = request.get("nome")
+            query = "DELETE FROM Reclamados WHERE nome = ?"
+            execute_query(query, (nome,))
+            response = {"status": "success"}
+
+        elif action == "update_reclamado":
+            nome = request.get("nome")
+            novo_nome = request.get("novoNome")
+            query = "UPDATE Reclamados SET nome = ?, cpf = ?, cnpj = ?, email = ?, rua = ?, bairro = ?, cidade = ?, uf = ? WHERE nome = ?, cpf = ?, cnpj = ?, email = ?, rua = ?, bairro = ?, cidade = ?, uf = ?"
+            execute_query(query, (novo_nome or nome, nome))
+            response = {"status": "success"}
+        # RECLAMADO END
+        # RECLAMANTE
+        
 
         client_socket.send(json.dumps(response).encode("utf-8"))
     except Exception as e:
