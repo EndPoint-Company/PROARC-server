@@ -244,14 +244,35 @@ def handle_client(client_socket):
             response = {"processos": results}
 
         elif action == "add_processo":
-            """
-            Ainda tenho que ver como fazer, porque ele tem objetos como atributos
-            """
+            processo_id = request.get("processo_id")
+            motivo_id = request.get("motivo_id")
+            reclamante_id = request.get("reclamante_id")
+            titulo_processo = request.get("titulo_processo")
+            ano = request.get("ano")
+            status_processo = request.get("status_processo")
+            path_processo = request.get("path_processo")
+            data_audiencia = request.get("data_audiencia")
+
+            query = "INSERT INTO ProcessosAdministrativos (processo_id, motivo_id, reclamante_id, titulo_processo, status_processo, path_processo, ano, data_audiencia) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+            execute_query(query, (processo_id, motivo_id, reclamante_id, titulo_processo, status_processo, path_processo, ano, data_audiencia))
+            response = {"status": "success"}
 
         elif action == "update_processo_by_id":
-            """
-            Ainda tenho que ver como fazer, porque ele tem objetos como atributos
-            """
+            id = request.get("id")
+
+            processo_id = request.get("processo_id")
+            motivo_id = request.get("motivo_id")
+            reclamante_id = request.get("reclamante_id")
+            titulo_processo = request.get("titulo_processo")
+            ano = request.get("ano")
+            status_processo = request.get("status_processo")
+            path_processo = request.get("path_processo")
+            data_audiencia = request.get("data_audiencia")
+
+            query = "UPDATE ProcessosAdministrativos SET processo_id = ?, motivo_id = ?, reclamante_id = ?, titulo_processo = ?, status_processo = ?, path_processo = ?, ano = ?, data_audiencia = ? WHERE processo_id = ?"
+            execute_query(query, (processo_id, motivo_id, reclamante_id, titulo_processo, status_processo, path_processo, ano, data_audiencia, id))
+            response = {"status": "success"}
+
 
         elif action == "remove_processo_by_id":
             id = request.get("id")
