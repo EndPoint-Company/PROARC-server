@@ -46,6 +46,7 @@ def handle_client(client_socket):
             query = "SELECT nome FROM Motivos WHERE motivo_id = ?"
             results = execute_query(query, (id,))
             response = {"motivo": results[0] if results else None}
+            print(response)
                              
         elif action == "get_id_motivo_by_nome":
             nome = request.get("nome")
@@ -147,6 +148,7 @@ def handle_client(client_socket):
             """
             results = execute_query(query, (id,))
             response = {"reclamante": results[0] if results else None}
+            print(response)
 
         elif action == "get_reclamante_by_cpf":
             cpf = request.get("cpf")
@@ -206,7 +208,9 @@ def handle_client(client_socket):
                 FROM ProcessosAdministrativos WHERE processo_id = ?
             """
             results = execute_query(query, (id,))
-            response = {"processo": results[0] if results else None}
+            results = json.dumps(results, default=str)
+            response = {"processo": results}    
+            print(response)     
 
         elif action == "get_processos_by_status":
             status = request.get("status")
@@ -241,7 +245,9 @@ def handle_client(client_socket):
                 FROM ProcessosAdministrativos
             """
             results = execute_query(query)
+            results = json.dumps(results, default=str)
             response = {"processos": results}
+            print(response)
 
         elif action == "add_processo":
             processo_id = request.get("processo_id")
@@ -260,7 +266,6 @@ def handle_client(client_socket):
         elif action == "update_processo_by_id":
             id = request.get("id")
 
-            processo_id = request.get("processo_id")
             motivo_id = request.get("motivo_id")
             reclamante_id = request.get("reclamante_id")
             titulo_processo = request.get("titulo_processo")
@@ -270,7 +275,7 @@ def handle_client(client_socket):
             data_audiencia = request.get("data_audiencia")
 
             query = "UPDATE ProcessosAdministrativos SET processo_id = ?, motivo_id = ?, reclamante_id = ?, titulo_processo = ?, status_processo = ?, path_processo = ?, ano = ?, data_audiencia = ? WHERE processo_id = ?"
-            execute_query(query, (processo_id, motivo_id, reclamante_id, titulo_processo, status_processo, path_processo, ano, data_audiencia, id))
+            execute_query(query, (id, motivo_id, reclamante_id, titulo_processo, status_processo, path_processo, ano, data_audiencia, id))
             response = {"status": "success"}
 
 

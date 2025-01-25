@@ -2,7 +2,7 @@ import socket
 import threading 
 import pyodbc as odbc
 
-bind_ip = ""
+bind_ip = "127.0.0.1"
 bind_port = 9999
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
