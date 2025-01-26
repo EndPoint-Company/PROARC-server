@@ -3,7 +3,7 @@ import pyodbc
 import json
 
 db_config = {
-    'Driver': '{/opt/microsoft/msodbcsql17/lib64/libmsodbcsql-17.10.so.6.1}',
+    'Driver': '{SQL Server}',
     'Server': '34.151.220.250',
     'Database': 'testando1',
     'Trusted_Connection': 'no',
@@ -250,18 +250,41 @@ def handle_client(client_socket):
             print(response)
 
         elif action == "add_processo":
-            processo_id = request.get("processo_id")
-            motivo_id = request.get("motivo_id")
-            reclamante_id = request.get("reclamante_id")
-            titulo_processo = request.get("titulo_processo")
-            ano = request.get("ano")
-            status_processo = request.get("status_processo")
-            path_processo = request.get("path_processo")
-            data_audiencia = request.get("data_audiencia")
+            import datetime 
+            print("Começando...")
+            processo = request.get("processo")
+            #
+            nome = processo["Motivo"]["Nome"]
+            query = "SELECT motivo_id FROM Motivos WHERE nome = ?"
+            results = execute_query(query, (nome,))
+            #
+            motivo_id = results[0][0]
+            print(motivo_id)
+            #
+            reclamante = processo["Reclamante"]
+            query = """
+                INSERT INTO Reclamantes (nome, rg, cpf)
+                VALUES (?, ?, ?)
+            """
+            execute_query(query, (reclamante["Nome"], reclamante["Rg"], reclamante["Cpf"]))
+            query = "SELECT reclamante_id FROM Reclamantes WHERE cpf = ?"
+            results = execute_query(query, (reclamante["Cpf"],))
+            reclamante_id = results[0][0]
+            print(reclamante_id)
 
-            query = "INSERT INTO ProcessosAdministrativos (processo_id, motivo_id, reclamante_id, titulo_processo, status_processo, path_processo, ano, data_audiencia) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
-            execute_query(query, (processo_id, motivo_id, reclamante_id, titulo_processo, status_processo, path_processo, ano, data_audiencia))
+            titulo_processo = processo["Titulo"]
+            ano = processo["Ano"]
+            status_processo = processo["Status"]
+            path_processo = processo["CaminhoDoProcesso"]
+            data_audiencia = processo["DataDaAudiencia"]
+
+            print("Adicionando..." + str(motivo_id) + " " + str(reclamante_id) + " " + str(titulo_processo) + " " + str(status_processo) + " " + str(path_processo) + " " + str(ano) + " " + str(data_audiencia))
+
+            query = "INSERT INTO ProcessosAdministrativos (motivo_id, reclamante_id, titulo_processo, status_processo, path_processo, ano, data_audiencia) VALUES (?, ?, ?, ?, ?, ?, ?)"
+            execute_query(query, (motivo_id, reclamante_id, titulo_processo, status_processo, path_processo, ano, datetime.datetime.fromisoformat(data_audiencia)))
             response = {"status": "success"}
+
+            # ADICIONAR PARTE DO RECLAMADO
 
         elif action == "update_processo_by_id":
             id = request.get("id")
