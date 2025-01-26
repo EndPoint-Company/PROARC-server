@@ -33,12 +33,15 @@ def handle_client_pwd(client_socket):
             print(msg)
             if len(msg) <= 0:
                 break
+            if msg == b"BYE":
+                break
             #request += msg.decode("utf-8")
             request += msg.hex("-").upper()
 
-        print(request)
+        print("request is: "+request)
 
         if (check_password(request)):
+            print("OK")
             client_socket.send("OK".encode("utf-8"))
             break
         client_socket.send("NOT OK".encode("utf-8")) 
@@ -84,7 +87,7 @@ def check_password(hashed_password):
 def send_salt_to_client(client_socket):
     import json
 
-    conn = odbc.connect('Driver={/opt/microsoft/msodbcsql17/lib64/libmsodbcsql-17.10.so.6.1};'
+    conn = odbc.connect('Driver={SQL Server};'
                         'Server=34.151.220.250;'
                         'Database=testando1;'
                         'Trusted_Connection=no;'
@@ -92,7 +95,7 @@ def send_salt_to_client(client_socket):
                         'pwd=proarc;')
     
     cursor = conn.cursor()
-    cursor.execute("SELECT salt FROM UsuariosTeste1")
+    cursor.execute("SELECT salt FROM Usuarios")
     a = cursor.fetchall()
 
     data = json.dumps([tuple(row) for row in a])
@@ -103,7 +106,7 @@ def send_salt_to_client(client_socket):
 
 
 def check_password(hashed_password):
-    conn = odbc.connect('Driver={/opt/microsoft/msodbcsql17/lib64/libmsodbcsql-17.10.so.6.1};'
+    conn = odbc.connect('Driver={SQL Server};'
                             'Server=34.151.220.250;'
                             'Database=testando1;'
                             'Trusted_Connection=no;'
@@ -111,11 +114,11 @@ def check_password(hashed_password):
                             'pwd=proarc;')
         
     cursor = conn.cursor()
-    cursor.execute("SELECT hash_and_salt FROM UsuariosTeste1")
+    cursor.execute("SELECT hash_and_salt FROM Usuarios")
     a = cursor.fetchall()
 
     for hash_and_salt in a:
-        print("hash_and_salt: " + hash_and_salt[0])
+        print("hash_and_salt: " + hash_and_salt[0] + " - " + hashed_password)
         if hash_and_salt[0] == hashed_password:
             return True
 
