@@ -1,19 +1,10 @@
 import socket
 import pyodbc
 import json
-
-db_config = {
-    'Driver': '{SQL Server}',
-    'Server': '34.151.220.250',
-    'Database': 'testando1',
-    'Trusted_Connection': 'no',
-    'uid': 'sqlserver',
-    'pwd': 'proarc'
-}
-
+import global_config
 
 def execute_query(query, params=()):
-    conn = pyodbc.connect(**db_config)
+    conn = pyodbc.connect(**global_config.get_db_config())
     cursor = conn.cursor()
     cursor.execute(query, params)
     if query.strip().lower().startswith("select"):
@@ -101,7 +92,7 @@ def handle_client(client_socket):
             """
             execute_query(query, (
                 reclamado["Nome"], reclamado["Cpf"], reclamado["Cnpj"],
-                reclamado["NumeroRua"], reclamado["Email"], reclamado["Rua"],
+                reclamado["NumeroDaRua"], reclamado["Email"], reclamado["Rua"],
                 reclamado["Bairro"], reclamado["Cidade"], reclamado["Estado"]
             ))
             response = {"status": "success"}
@@ -116,7 +107,7 @@ def handle_client(client_socket):
             """
             execute_query(query, (
                 reclamado["Nome"], reclamado["Cpf"], reclamado["Cnpj"],
-                reclamado["NumeroRua"], reclamado["Email"], reclamado["Rua"],
+                reclamado["NumeroDaRua"], reclamado["Email"], reclamado["Rua"],
                 reclamado["Bairro"], reclamado["Cidade"], reclamado["Estado"], id
             ))
             response = {"status": "success"}
@@ -284,7 +275,32 @@ def handle_client(client_socket):
             execute_query(query, (motivo_id, reclamante_id, titulo_processo, status_processo, path_processo, ano, datetime.datetime.fromisoformat(data_audiencia)))
             response = {"status": "success"}
 
-            # ADICIONAR PARTE DO RECLAMADO
+            reclamado = processo["Reclamado"]
+            query = """
+                INSERT INTO Reclamados (nome, cpf, cnpj, numero_rua, email, rua, bairro, cidade, uf)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """
+            execute_query(query, (
+                reclamado["Nome"], reclamado["Cpf"], reclamado["Cnpj"],
+                reclamado["NumeroDaRua"], reclamado["Email"], reclamado["Rua"],
+                reclamado["Bairro"], reclamado["Cidade"], reclamado["Estado"]
+            ))
+
+            query = "SELECT processo_id FROM ProcessosAdministrativos WHERE titulo_processo = ?"
+            results = execute_query(query, (titulo_processo,))
+            processo_id = results[0][0]
+            print(processo_id)
+
+            query = "SELECT reclamado_id FROM Reclamados WHERE nome = ?"
+            results = execute_query(query, (reclamado["Nome"],))
+            reclamado_id = results[0][0]
+            print(reclamado_id)         
+
+            query = "INSERT INTO RelacaoProcessoReclamado (processo_id, reclamado_id) VALUES (?, ?)"
+            execute_query(query, (processo_id, reclamado_id))
+            response = {"status": "success"}
+
+            print("Processo e afins adicionados com sucesso!")
 
         elif action == "update_processo_by_id":
             id = request.get("id")

@@ -1,6 +1,7 @@
 import socket 
 import threading 
 import pyodbc as odbc
+import global_config
 
 bind_ip = "127.0.0.1"
 bind_port = 9999
@@ -16,6 +17,36 @@ def handle_client_db(client_socket):
     import controladores
 
     controladores.handle_client(client_socket)
+
+
+def handle_client_fts(client_socket):
+    client_socket.settimeout(600000)
+    print("[+] Receiving file...")
+
+    with open("received_file_from_client", "wb") as file:
+        while True:
+            data = client_socket.recv(1024)
+            if not data:
+                break
+            file.write(data)
+
+    print("[+] File received successfully.")
+
+
+def handle_client_ftr(client_socket):
+    import os
+
+    file_path = client_socket.recv(1024).decode("utf-8")
+    if os.path.exists(file_path):
+        print(f"[+] Sending file: {file_path}")
+        with open(file_path, "rb") as file:
+            while (chunk := file.read(1024)):
+
+                client_socket.send(chunk)
+        print("[+] File sent successfully.")
+    else:
+        print(f"[-] File not found: {file_path}")
+        client_socket.send(b"ERROR: File not found.")
 
 
 def handle_client_pwd(client_socket): 
@@ -52,12 +83,7 @@ def handle_client_pwd(client_socket):
 
 
 def send_request_to_db(request):
-    conn = odbc.connect('Driver={/opt/microsoft/msodbcsql17/lib64/libmsodbcsql-17.10.so.6.1};'
-                        'Server=34.151.220.250;'
-                        'Database=testando1;'
-                        'Trusted_Connection=no;'
-                        'uid=sqlserver;'
-                        'pwd=proarc;')
+    conn = odbc.connect(**global_config.get_db_config())
     
     cursor = conn.cursor()
     cursor.execute(request)
@@ -65,34 +91,11 @@ def send_request_to_db(request):
 
     cursor.commit()
 
-def check_password(hashed_password):
-    conn = odbc.connect('Driver={/opt/microsoft/msodbcsql17/lib64/libmsodbcsql-17.10.so.6.1};'
-                            'Server=34.151.220.250;'
-                            'Database=testando1;'
-                            'Trusted_Connection=no;'
-                            'uid=sqlserver;'
-                            'pwd=proarc;')
-        
-    cursor = conn.cursor()
-    cursor.execute("SELECT hash_and_salt FROM UsuariosTeste1")
-    a = cursor.fetchall()
-
-    for hash_and_salt in a:
-        print("hash_and_salt: " + hash_and_salt[0])
-        if hash_and_salt[0] == hashed_password:
-            return True
-
-    return False
 
 def send_salt_to_client(client_socket):
     import json
 
-    conn = odbc.connect('Driver={SQL Server};'
-                        'Server=34.151.220.250;'
-                        'Database=testando1;'
-                        'Trusted_Connection=no;'
-                        'uid=sqlserver;'
-                        'pwd=proarc;')
+    conn = odbc.connect(**global_config.get_db_config())
     
     cursor = conn.cursor()
     cursor.execute("SELECT salt FROM Usuarios")
@@ -106,12 +109,7 @@ def send_salt_to_client(client_socket):
 
 
 def check_password(hashed_password):
-    conn = odbc.connect('Driver={SQL Server};'
-                            'Server=34.151.220.250;'
-                            'Database=testando1;'
-                            'Trusted_Connection=no;'
-                            'uid=sqlserver;'
-                            'pwd=proarc;')
+    conn = odbc.connect(**global_config.get_db_config())
         
     cursor = conn.cursor()
     cursor.execute("SELECT hash_and_salt FROM Usuarios")
@@ -136,4 +134,10 @@ while True:
         client_handler.start() 
     if (r == "AUTH"):
         client_handler = threading.Thread(target=handle_client_pwd, args=(client,))
+        client_handler.start()
+    if (r == "FTR"):
+        client_handler = threading.Thread(target=handle_client_ftr, args=(client,))
+        client_handler.start()
+    if (r == "FTS"):
+        client_handler = threading.Thread(target=handle_client_fts, args=(client,))
         client_handler.start()
