@@ -1,4 +1,4 @@
-db_config = {'Driver': '{SQL Server}',
+db_config = {'Driver': '{/opt/microsoft/msodbcsql17/lib64/libmsodbcsql-17.10.so.6.1}',
             'Server':'34.151.220.250;',
             'Database':'testando1',
             'Trusted_Connection':'no;',
