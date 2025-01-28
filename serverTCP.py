@@ -3,7 +3,7 @@ import threading
 import pyodbc as odbc
 import global_config
 
-bind_ip = "127.0.0.1"
+bind_ip = ""
 bind_port = 9999
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
@@ -63,6 +63,9 @@ def handle_client_pwd(client_socket):
                 break
             print(msg)
             if len(msg) <= 0:
+                break
+            if len(msg) < 1024:
+                request += msg.hex("-").upper()
                 break
             if msg == b"BYE":
                 break
