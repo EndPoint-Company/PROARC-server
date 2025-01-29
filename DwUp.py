@@ -1,57 +1,49 @@
 import socket
-import threading
 import os
+import threading 
+import pyodbc as odbc
 
-bind_ip = "0.0.0.0"
-bind_port = 9999
 block_size = 1024
 
-server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server.bind((bind_ip, bind_port))
-server.listen()
-
-print(f"[+] Listening on port {bind_ip}:{bind_port}")
-
-def handle_client(client_socke:socket.socket):
+def handle_client_ftr(client_socket: socket.socket):
     try:
-        
-        command = client_socket.recv(3).decode("utf-8")
         client_socket.settimeout(600000)
+      
+        file_path = client_socket.recv(block_size).decode("utf-8").strip()
 
-        if command == "FTS":  
-            print("[+] Receiving file...")
-            with open("received_file_from_client", "wb") as file:
-                while True:
-                    data = client_socket.recv(block_size)
-                    if not data:
-                        break
-                    file.write(data)
-            print("[+] File received successfully.")
+        if os.path.exists(file_path):
 
-        elif command == "FTR": 
-            file_path = client_socket.recv(1024).decode("utf-8")
-            if os.path.exists(file_path):
-                print(f"[+] Sending file: {file_path}")
-                with open(file_path, "rb") as file:
-                    while (chunk := file.read(block_size)):
-
-                        client_socket.send(chunk)
-                print("[+] File sent successfully.")
-            else:
-                print(f"[-] File not found: {file_path}")
-                client_socket.send(b"ERROR: File not found.")
+            print(f"[+] Sending file: {file_path}")
+            with open(file_path, "rb") as file:
+                while (chunk := file.read(block_size)):
+                    client_socket.send(chunk)
+            print("[+] File sent successfully.")
 
         else:
-            print(f"[-] Unknown command received: {command}")
+            print(f"[-] File not found: {file_path}")
+            client_socket.send(b"ERROR: File not found.")
+
     except Exception as e:
-        print(f"[-] Error: {e}")
+        print(f"[-] Error in handle_client_ftr: {e}")
+
     finally:
         client_socket.close()
 
+def handle_client_fts(client_socket: socket.socket):
+        try:
+            client_socket.settimeout(600)
+            print("[+] Receiving file...")
+            with open("received_file_from_client", "wb") as file:
+                    while True:
+                        data = client_socket.recv(block_size)
+                        if not data:
+                            break
+                        file.write(data)
+                    print("[+] File received successfully.")     
+        except Exception as e:
+            print(f"[-] Error in handle_client_ftr: {e}")
 
-while True:
-    client_socket, addr = server.accept()
-    print(f"[+] Accepted connection from: {addr[0]}:{addr[1]}")
+        finally:
+            client_socket.close()
 
-    client_handler = threading.Thread(target=handle_client, args=(client_socket,))
-    client_handler.start()
+

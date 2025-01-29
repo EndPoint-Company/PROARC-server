@@ -2,9 +2,11 @@ import socket
 import threading 
 import pyodbc as odbc
 import global_config
+import os
 
 bind_ip = ""
 bind_port = 9999
+block_size = 1024
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
 server.bind((bind_ip, bind_port)) 
@@ -15,39 +17,15 @@ print(f"[+] Listening on port {bind_ip} : {bind_port}")
 
 def handle_client_db(client_socket): 
     import controladores
-
     controladores.handle_client(client_socket)
 
+def handle_client_ftr(client_socket: socket.socket):
+    import DwUp
+    DwUp.handle_client_ftr(client_socket)
 
-def handle_client_fts(client_socket):
-    client_socket.settimeout(600000)
-    print("[+] Receiving file...")
-
-    with open("received_file_from_client", "wb") as file:
-        while True:
-            data = client_socket.recv(1024)
-            if not data:
-                break
-            file.write(data)
-
-    print("[+] File received successfully.")
-
-
-def handle_client_ftr(client_socket):
-    import os
-
-    file_path = client_socket.recv(1024).decode("utf-8")
-    if os.path.exists(file_path):
-        print(f"[+] Sending file: {file_path}")
-        with open(file_path, "rb") as file:
-            while (chunk := file.read(1024)):
-
-                client_socket.send(chunk)
-        print("[+] File sent successfully.")
-    else:
-        print(f"[-] File not found: {file_path}")
-        client_socket.send(b"ERROR: File not found.")
-
+def handle_client_fts(client_socket: socket.socket):
+    import DwUp
+    DwUp.handle_client_fts(client_socket)
 
 def handle_client_pwd(client_socket): 
     request = ''
@@ -135,12 +113,15 @@ while True:
     if (r == "DB"):
         client_handler = threading.Thread(target=handle_client_db, args=(client,))
         client_handler.start() 
+
     if (r == "AUTH"):
         client_handler = threading.Thread(target=handle_client_pwd, args=(client,))
         client_handler.start()
+
     if (r == "FTR"):
         client_handler = threading.Thread(target=handle_client_ftr, args=(client,))
         client_handler.start()
+    
     if (r == "FTS"):
         client_handler = threading.Thread(target=handle_client_fts, args=(client,))
         client_handler.start()
