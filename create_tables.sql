@@ -35,10 +35,19 @@ CREATE TABLE Reclamantes(
     created_at DATETIME DEFAULT GETDATE(),
 );
 
+CREATE TABLE Procuradores(
+    procurador_id INT PRIMARY KEY NOT NULL IDENTITY(1, 1),
+    nome NVARCHAR(100) NOT NULL,
+    rg NVARCHAR(20) NOT NULL,
+    cpf NCHAR(11) NULL,
+    created_at DATETIME DEFAULT GETDATE(),
+);
+
 CREATE TABLE ProcessosAdministrativos(
     processo_id INT PRIMARY KEY NOT NULL IDENTITY(1, 1),
     motivo_id INT NULL,
     reclamante_id INT NULL,
+    procurador_id INT NULL,
     titulo_processo NVARCHAR(10) NOT NULL UNIQUE,
     status_processo NVARCHAR(50) NULL,
     path_processo NVARCHAR(200) NOT NULL UNIQUE,
@@ -52,6 +61,9 @@ CREATE TABLE ProcessosAdministrativos(
     FOREIGN KEY (motivo_id) REFERENCES Motivos(motivo_id)
         ON DELETE CASCADE
         ON UPDATE CASCADE,
+    FOREIGN KEY (procurador_id) REFERENCES Procuradores(procurador_id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
 );
 
 CREATE TABLE RelacaoProcessoReclamado(
