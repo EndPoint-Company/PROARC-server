@@ -26,6 +26,7 @@ def handle_get_motivo_by_id(request):
     id = request.get("id")
     query = "SELECT nome FROM Motivos WHERE motivo_id = ?"
     results = execute_query(query, (id,))
+    print(results)
     return {"motivo": results[0] if results else None}
 
 def handle_get_id_motivo_by_nome(request):
@@ -125,6 +126,7 @@ def handle_get_reclamante_by_id(request):
         SELECT reclamante_id, nome, rg, cpf FROM Reclamantes WHERE reclamante_id = ?
     """
     results = execute_query(query, (id,))
+    print(results)
     return {"reclamante": results[0] if results else None}
 
 def handle_get_reclamante_by_cpf(request):
@@ -217,6 +219,58 @@ def handle_get_all_processos(request):
     """
     results = execute_query(query)
     return {"processos": json.dumps(results, default=str)}
+
+def handle_new_get_all_processos(request):
+    query_processos = """
+        SELECT processo_id, motivo_id, reclamante_id, titulo_processo, status_processo, path_processo, ano, data_audiencia 
+        FROM ProcessosAdministrativos
+    """
+    processos = execute_query(query_processos)
+    
+    query_motivos = "SELECT motivo_id, nome FROM Motivos"
+    motivos = execute_query(query_motivos)
+    motivos_dict = {m[0]: {"motivo_id": m[0], "nome": m[1]} for m in motivos}
+    
+    query_reclamantes = "SELECT reclamante_id, nome, rg, cpf FROM Reclamantes"
+    reclamantes = execute_query(query_reclamantes)
+    reclamantes_dict = {r[0]: {"reclamante_id": r[0], "nome": r[1], "rg": r[2], "cpf": r[3]} for r in reclamantes}
+    
+    query_relacao = "SELECT processo_id, reclamado_id FROM RelacaoProcessoReclamado"
+    relacao = execute_query(query_relacao)
+    relacao_dict = {}
+    for r in relacao:
+        processo_id = r[0]
+        reclamado_id = r[1]
+        if processo_id not in relacao_dict:
+            relacao_dict[processo_id] = []
+        relacao_dict[processo_id].append(reclamado_id)
+    
+    query_reclamados = "SELECT reclamado_id, nome, cpf, cnpj, numero_rua, email, rua, bairro, cidade, uf FROM Reclamados"
+    reclamados = execute_query(query_reclamados)
+    reclamados_dict = {r[0]: {"reclamado_id": r[0], "nome": r[1], "cpf": r[2], "cnpj": r[3], "numero_rua": r[4], "email": r[5], "rua": r[6], "bairro": r[7], "cidade": r[8], "uf": r[9]} for r in reclamados}
+    
+    processos_completos = []
+    for p in processos:
+        processo_id = p[0]
+        motivo = motivos_dict.get(p[1], {}) 
+        reclamante = reclamantes_dict.get(p[2], {}) 
+        reclamados_ids = relacao_dict.get(processo_id, [])
+        reclamados = [reclamados_dict.get(rid, {}) for rid in reclamados_ids]
+        
+        processo_data = {
+            "processo_id": processo_id,
+            "motivo": motivo,
+            "reclamante": reclamante,
+            "reclamados": reclamados,
+            "titulo_processo": p[3],
+            "status_processo": p[4],
+            "path_processo": p[5],
+            "ano": p[6],
+            "data_audiencia": p[7].isoformat() if isinstance(p[7], datetime.datetime) else p[7]
+        }
+        processos_completos.append(processo_data)
+    
+    return {"processos": processos_completos}
 
 def handle_add_processo(request):
     import datetime
@@ -369,6 +423,7 @@ action_handlers = {
     "get_processos_by_reclamante_id": handle_get_processos_by_reclamante_id,
     "get_processos_by_motivo_id": handle_get_processos_by_motivo_id,
     "get_all_processos": handle_get_all_processos,
+    "new_get_all_processos": handle_new_get_all_processos,
     "add_processo": handle_add_processo,
     "update_processo_by_id": handle_update_processo_by_id,
     "remove_processo_by_id": handle_remove_processo_by_id,
@@ -384,6 +439,8 @@ action_handlers = {
 }
 
 def handle_client(client_socket):
+    client_socket.settimeout(20)
+
     try:
         data = client_socket.recv(4096).decode("utf-8").strip()
         request = json.loads(data)
