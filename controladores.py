@@ -223,7 +223,7 @@ def handle_get_all_processos(request):
 
 def handle_new_get_all_processos(request):
     query_processos = """
-        SELECT processo_id, motivo_id, reclamante_id, titulo_processo, status_processo, path_processo, ano, data_audiencia 
+        SELECT processo_id, motivo_id, reclamante_id, titulo_processo, status_processo, path_processo, ano, data_audiencia, created_at 
         FROM ProcessosAdministrativos
     """
     processos = execute_query(query_processos)
@@ -267,10 +267,12 @@ def handle_new_get_all_processos(request):
             "status_processo": p[4],
             "path_processo": p[5],
             "ano": p[6],
-            "data_audiencia": p[7].isoformat() if isinstance(p[7], datetime.datetime) else p[7]
+            "data_audiencia": p[7].isoformat() if isinstance(p[7], datetime.datetime) else p[7],
+            "created_at": p[8].isoformat() if isinstance(p[8], datetime.datetime) else p[8]
         }
         processos_completos.append(processo_data)
-    
+        
+    print(processos_completos)
     return {"processos": processos_completos}
 
 def handle_add_processo(request):
