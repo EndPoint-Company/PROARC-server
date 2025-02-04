@@ -4,7 +4,7 @@ CREATE TABLE Reclamados(
     cpf NCHAR(11) NULL,
     cnpj NCHAR(14) NULL,
     numero_rua SMALLINT NOT NULL,
-    email NCHAR(150) NULL CHECK (email IS NULL OR email LIKE '%_@__%.__%'),
+    email NVARCHAR(100) NULL CHECK (email IS NULL OR email LIKE '%_@__%.__%'),
     cep NCHAR(8) NOT NULL,
     created_at DATETIME DEFAULT GETDATE()
 );
@@ -77,7 +77,7 @@ CREATE TABLE ReclamacoesEnel(
     reclamacao_id INT NOT NULL,
     atendente NVARCHAR(100) NULL,
     contato_enel_telefone NCHAR(11) NULL,
-    contato_enel_email NCHAR(150) NULL CHECK (contato_enel_email IS NULL OR contato_enel_email LIKE '%_@__%.__%'),
+    contato_enel_email NVARCHAR(100) NULL CHECK (contato_enel_email IS NULL OR contato_enel_email LIKE '%_@__%.__%'),
     observacao TEXT NULL,
 
     FOREIGN KEY (reclamacao_id) REFERENCES Reclamacoes(reclamacao_id)
