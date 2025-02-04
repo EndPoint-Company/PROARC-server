@@ -27,7 +27,7 @@ def handle_get_motivo_by_id(request):
     id = request.get("id")
     query = "SELECT nome FROM Motivos WHERE motivo_id = ?"
     results = execute_query(query, (id,))
-    print(results)
+
     return {"motivo": results[0] if results else None}
 
 def handle_get_id_motivo_by_nome(request):
@@ -127,7 +127,7 @@ def handle_get_reclamante_by_id(request):
         SELECT reclamante_id, nome, rg, cpf FROM Reclamantes WHERE reclamante_id = ?
     """
     results = execute_query(query, (id,))
-    print(results)
+
     return {"reclamante": results[0] if results else None}
 
 def handle_get_reclamante_by_cpf(request):
@@ -272,7 +272,6 @@ def handle_new_get_all_processos(request):
         }
         processos_completos.append(processo_data)
         
-    print(processos_completos)
     return {"processos": processos_completos}
 
 def handle_add_processo(request):
