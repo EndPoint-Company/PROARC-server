@@ -98,10 +98,10 @@ CREATE TABLE RelacaoProcessoReclamado(
         ON UPDATE CASCADE,
 );
 
-CREATE TABLE HistoricoMudancaStatus(
+CREATE TABLE HistoricoMudancaSituacao(
     reclamacao_id INT,
-    status_old NVARCHAR(50) NULL,
-    status_new NVARCHAR(50) NOT NULL,
+    situacao_old NVARCHAR(50) NULL,
+    situacao_new NVARCHAR(50) NOT NULL,
     changed_at DATETIME DEFAULT GETDATE(),
 
     FOREIGN KEY (reclamacao_id) REFERENCES Reclamacoes(reclamacao_id)
