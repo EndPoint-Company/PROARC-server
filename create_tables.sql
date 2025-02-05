@@ -3,7 +3,12 @@ CREATE TABLE Reclamados(
     nome NVARCHAR(150) NOT NULL,
     cpf NCHAR(11) NULL,
     cnpj NCHAR(14) NULL,
-    numero_rua SMALLINT NOT NULL,
+    numero_addr SMALLINT NOT NULL,
+    logradouro_addr NVARCHAR(100) NOT NULL,
+    bairro_addr NVARCHAR(100) NOT NULL,
+    cidade_addr NVARCHAR(100) NOT NULL,
+    uf_addr NCHAR(2) NOT NULL,
+    telefone NCHAR(11) NULL CHECK (telefone IS NULL OR telefone LIKE '(__)____-____'),
     email NVARCHAR(100) NULL CHECK (email IS NULL OR email LIKE '%_@__%.__%'),
     cep NCHAR(8) NOT NULL,
     created_at DATETIME DEFAULT GETDATE()
