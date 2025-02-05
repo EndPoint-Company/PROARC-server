@@ -1,14 +1,14 @@
 CREATE TABLE Reclamados(
     reclamado_id INT PRIMARY KEY NOT NULL IDENTITY(1, 1),
     nome NVARCHAR(150) NOT NULL,
-    cpf NCHAR(11) NULL,
-    cnpj NCHAR(14) NULL,
+    cpf NCHAR(11) NULL UNIQUE,
+    cnpj NCHAR(14) NULL UNIQUE,
     numero_addr SMALLINT NOT NULL,
     logradouro_addr NVARCHAR(100) NOT NULL,
     bairro_addr NVARCHAR(100) NOT NULL,
     cidade_addr NVARCHAR(100) NOT NULL,
     uf_addr NCHAR(2) NOT NULL,
-    telefone NCHAR(11) NULL CHECK (telefone IS NULL OR telefone LIKE '(__)____-____'),
+    telefone NCHAR(11) NULL,
     email NVARCHAR(100) NULL CHECK (email IS NULL OR email LIKE '%_@__%.__%'),
     cep NCHAR(8) NOT NULL,
     created_at DATETIME DEFAULT GETDATE()
@@ -32,16 +32,20 @@ CREATE TABLE Motivos(
 CREATE TABLE Reclamantes(
     reclamante_id INT PRIMARY KEY NOT NULL IDENTITY(1, 1),
     nome NVARCHAR(100) NOT NULL,
-    rg NVARCHAR(10) NULL,
-    cpf NCHAR(11) NOT NULL,
+    rg NVARCHAR(10) NULL UNIQUE,
+    cpf NCHAR(11) NOT NULL UNIQUE,
+    telefone NCHAR(11) NULL,
+    email NVARCHAR(100) NULL CHECK (email IS NULL OR email LIKE '%_@__%.__%'),
     created_at DATETIME DEFAULT GETDATE(),
 );
 
 CREATE TABLE Procuradores(
     procurador_id INT PRIMARY KEY NOT NULL IDENTITY(1, 1),
     nome NVARCHAR(100) NOT NULL,
-    rg NVARCHAR(10) NULL,
-    cpf NCHAR(11) NOT NULL,
+    rg NVARCHAR(10) NULL UNIQUE,
+    cpf NCHAR(11) NOT NULL UNIQUE,
+    telefone NCHAR(11) NULL,
+    email NVARCHAR(100) NULL CHECK (email IS NULL OR email LIKE '%_@__%.__%'),
     created_at DATETIME DEFAULT GETDATE(),
 );
 
@@ -71,7 +75,7 @@ CREATE TABLE Reclamacoes(
 CREATE TABLE ReclamacoesGeral(
     reclamacao_id INT NOT NULL,
     data_audiencia DATETIME NULL,
-    conciliadora NVARCHAR(100) NULL,
+    conciliador NVARCHAR(100) NULL,
 
     FOREIGN KEY (reclamacao_id) REFERENCES Reclamacoes(reclamacao_id)
         ON DELETE CASCADE
