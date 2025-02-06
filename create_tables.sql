@@ -59,6 +59,7 @@ CREATE TABLE Reclamacoes(
     caminho_dir NVARCHAR(200) NOT NULL UNIQUE,
     data_abertura DATE NOT NULL,
     ultima_mudanca DATETIME DEFAULT GETDATE(),
+    criador NVARCHAR(100) NOT NULL,
     created_at DATETIME DEFAULT GETDATE(),
 
     FOREIGN KEY (reclamante_id) REFERENCES Reclamantes(reclamante_id)
