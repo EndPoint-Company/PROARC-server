@@ -12,6 +12,14 @@ db_config_linux = {'Driver': '{/opt/microsoft/msodbcsql17/lib64/libmsodbcsql-17.
             'uid':'sqlserver;',
             'pwd':'proarc;'}
 
+db_config_pg = {
+    "database": "proarc-1",
+    "user": "postgres",
+    "host": "34.95.242.42",
+    "password": "proarc",
+    "port": 5432
+}
+
 def get_db_config():
     from sys import platform
 
