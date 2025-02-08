@@ -375,6 +375,189 @@ def action_count_reclamacoes_geral(request):
     return {"count": quantidade[0][0]}
 
 
+def action_get_reclamante_por_id(request):
+    id = request.get("id")
+    query = """
+        SELECT reclamante_id, nome, rg, cpf, telefone, email FROM Reclamantes WHERE reclamante_id = (%s)
+    """
+    results = execute_query(query, (id,))
+
+    return {"reclamante": results[0] if results else None}
+
+
+def action_get_reclamante_por_cpf(request):
+    cpf = request.get("cpf")
+    query = "SELECT reclamante_id, nome, rg, cpf, telefone, email FROM Reclamantes WHERE cpf = (%s)"
+    results = execute_query(query, (cpf,))
+    return {"reclamante": results[0] if results else None}
+
+
+def action_get_reclamante_por_rg(request):
+    rg = request.get("rg")
+    query = "SELECT reclamante_id, nome, rg, cpf, telefone, email FROM Reclamantes WHERE rg = (%s)"
+    results = execute_query(query, (rg,))
+    return {"reclamante": results[0] if results else None}
+
+
+def action_get_all_reclamantes(request):
+    query = "SELECT reclamante_id, nome, rg, cpf, telefone, email FROM Reclamantes"
+    results = execute_query(query)
+    return {"reclamantes": results}
+
+
+def action_insert_reclamante(request):
+    reclamante = request.get("reclamante")
+    query = """
+        INSERT INTO Reclamantes (nome, rg, cpf, telefone, email)
+        VALUES ((%s), (%s), (%s), (%s), (%s))
+    """
+    execute_query(query, (reclamante["Nome"], reclamante["Rg"], reclamante["Cpf"], reclamante["Telefone"], reclamante["Email"]))
+    return {"status": "success"}
+
+
+def action_update_reclamante_by_id(request):
+    id = request.get("id")
+    reclamante = request.get("reclamante")
+    query = """
+        UPDATE Reclamantes
+        SET nome = (%s), rg = (%s), cpf = (%s), telefone = (%s), email = (%s)
+        WHERE reclamante_id = (%s)
+    """
+    execute_query(query, (reclamante["Nome"], reclamante["Rg"], reclamante["Cpf"], reclamante["Telefone"], reclamante["Email"], id))
+    return {"status": "success"}
+
+
+def action_delete_reclamante_by_id(request):
+    id = request.get("id")
+    query = "DELETE FROM Reclamantes WHERE reclamante_id = (%s)"
+    execute_query(query, (id,))
+    return {"status": "success"}
+
+
+def action_count_reclamantes(request):
+    query = "SELECT COUNT(*) FROM Reclamantes"
+    results = execute_query(query)
+    return {"count": results[0][0]}
+
+
+def action_get_reclamado_por_id(request):
+    id = request.get("id")
+    query = """
+        SELECT nome, cpf, cnpj, numero_addr, logradouro_addr, bairro_addr, cidade_addr, uf_addr, cep, telefone, email
+        FROM Reclamados WHERE reclamado_id = (%s)
+    """
+    results = execute_query(query, (id,))
+    return {"reclamado": results[0] if results else None}
+
+def action_insert_reclamado(request):
+    reclamado = request.get("reclamado")
+    query = """
+        INSERT INTO Reclamados (nome, cpf, cnpj, numero_addr, logradouro_addr, bairro_addr, cidade_addr, uf_addr, cep, telefone, email)
+        VALUES ((%s), (%s), (%s), (%s), (%s), (%s), (%s), (%s), (%s), (%s), (%s))
+    """
+    execute_query(query, (
+        reclamado["Nome"], reclamado["Cpf"], reclamado["Cnpj"],
+        reclamado["Numero"], reclamado["Logradouro"], reclamado["Bairro"],
+        reclamado["Cidade"], reclamado["Uf"], reclamado["Cep"], reclamado["Telefone"], reclamado["Email"]
+    ))
+    return {"status": "success"}
+
+def action_update_reclamado_por_id(request):
+    id = request.get("id")
+    reclamado = request.get("reclamado")
+    query = """
+        UPDATE Reclamados
+        SET nome = (%s), cpf = (%s), cnpj = (%s), numero_addr = (%s), logradouro_addr = (%s), bairro_addr = (%s), cidade_addr = (%s), uf_addr = (%s), cep = (%s), telefone = (%s), email = (%s)
+        WHERE reclamado_id = (%s)
+    """
+    execute_query(query, (
+        reclamado["Nome"], reclamado["Cpf"], reclamado["Cnpj"],
+        reclamado["Numero"], reclamado["Logradouro"], reclamado["Bairro"],
+        reclamado["Cidade"], reclamado["Uf"], reclamado["Cep"], reclamado["Telefone"], reclamado["Email"], id
+    ))
+    return {"status": "success"}
+
+def action_delete_reclamado_por_id(request):
+    id = request.get("id")
+    query = "DELETE FROM Reclamados WHERE reclamado_id = (%s)"
+    execute_query(query, (id,))
+    return {"status": "success"}
+
+
+def action_get_all_reclamados(request):
+    query = """
+        SELECT reclamado_id, nome, cpf, cnpj, numero_addr, logradouro_addr, bairro_addr, cidade_addr, uf_addr, cep, telefone, email 
+        FROM Reclamados
+    """
+    results = execute_query(query)
+    return {"reclamados": results}
+
+
+def action_count_reclamados(request):
+    query = "SELECT COUNT(*) FROM Reclamados"
+    results = execute_query(query)
+    return {"count": results[0][0]}
+
+
+def action_get_motivo_por_nome(request):
+    nome = request.get("nome")
+    query = "SELECT nome FROM Motivos WHERE nome = (%s)"
+    results = execute_query(query, (nome,))
+    return {"motivo": results[0] if results else None}
+
+
+def action_get_motivo_por_id(request):
+    id = request.get("id")
+    query = "SELECT nome FROM Motivos WHERE motivo_id = (%s)"
+    results = execute_query(query, (id,))
+
+    return {"motivo": results[0] if results else None}
+
+
+def action_get_id_motivo_por_nome(request):
+    nome = request.get("nome")
+    query = "SELECT motivo_id FROM Motivos WHERE nome = (%s)"
+    results = execute_query(query, (nome,))
+    return {"id": results[0] if results else None}
+
+
+def action_get_all_motivos(request):
+    query = "SELECT nome FROM Motivos"
+    results = execute_query(query)
+    return {"motivos": results}
+
+
+def action_insert_motivo(request):
+    motivo = request.get("motivo")
+    query = "INSERT INTO Motivos (nome) VALUES ((%s))"
+    execute_query(query, (motivo["Nome"],))
+    return {"status": "success"}
+
+
+def action_delete_motivo_por_nome(request):
+    nome = request.get("nome")
+    query = "DELETE FROM Motivos WHERE nome = (%s)"
+    execute_query(query, (nome,))
+    return {"status": "success"}
+
+
+def action_update_motivo_por_id(request):
+    nome = request.get("nome")
+    novo_nome = request.get("novoNome")
+    query = "UPDATE Motivos SET nome = (%s) WHERE nome = (%s)"
+    execute_query(query, (novo_nome or nome, nome))
+    return {"status": "success"}
+
+
+def action_count_motivos(request):
+    query = "SELECT COUNT(*) FROM Motivos"
+    results = execute_query(query)
+    return {"count": results[0][0]}
+
+
+
+
+
 QUERIES = {
     "get_reclamacao_id_por_titulo": "SELECT reclamacao_id FROM Reclamacoes WHERE titulo = (%s)",
     "get_reclamado_id_por_addr": "SELECT reclamado_id FROM Reclamados WHERE numero_addr = (%s) AND logradouro_addr = (%s) AND bairro_addr = (%s) AND cidade_addr = (%s) AND uf_addr = (%s) AND cep = (%s)",
@@ -382,18 +565,18 @@ QUERIES = {
     "get_reclamante_por_cpf": "SELECT reclamante_id FROM Reclamantes WHERE cpf = (%s)",
     "get_procurador_por_cpf": "SELECT procurador_id FROM Procuradores WHERE cpf = (%s)",
     "get_reclamacao_situacao_por_titulo": "SELECT situacao FROM Reclamacoes WHERE titulo = (%s)",
+    "get_motivo_id_por_nome": "SELECT motivo_id FROM Motivos WHERE nome = (%s)",
+    "get_reclamante_id_por_cpf": "SELECT reclamante_id FROM Reclamantes WHERE cpf = (%s)",
+    "get_all_reclamacoes": "SELECT * FROM Reclamacoes",
     "insert_reclamante": "INSERT INTO Reclamantes (nome, rg, cpf, telefone, email) VALUES (%s, %s, %s, %s, %s)",
     "insert_relacao_reclamado_reclamacao": "INSERT INTO RelacaoProcessoReclamado (reclamacao_id, reclamado_id) VALUES (%s, %s)",
     "insert_reclamado": "INSERT INTO Reclamados (nome, cpf, cnpj, numero_addr, logradouro_addr, bairro_addr, cidade_addr, uf_addr, telefone, email, cep) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
     "insert_reclamacao": "INSERT INTO Reclamacoes (motivo_id, reclamante_id, procurador_id, titulo, situacao, caminho_dir, data_abertura, criador) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
     "insert_reclamacao_geral": "INSERT INTO ReclamacoesGeral (reclamacao_id, data_audiencia, conciliador) VALUES (%s, %s, %s)",
     "insert_reclamacao_enel": "INSERT INTO ReclamacoesEnel (reclamacao_id, atendente, contato_enel_telefone, contato_enel_email, observacao) VALUES (%s, %s, %s, %s, %s)",
-    "get_motivo_id_por_nome": "SELECT motivo_id FROM Motivos WHERE nome = (%s)",
-    "get_reclamante_id_por_cpf": "SELECT reclamante_id FROM Reclamantes WHERE cpf = (%s)",
-    "delete_reclamacao_por_titulo": "DELETE FROM Reclamacoes WHERE titulo = (%s)",
-    "get_all_reclamacoes": "SELECT * FROM Reclamacoes",
-    "update_situacao_reclamacao_por_titulo": "UPDATE Reclamacoes SET situacao = (%s) WHERE titulo = (%s)",
     "insert_situacao_mudanca_historico": "INSERT INTO HistoricoMudancaSituacao (reclamacao_id, situacao_old, situacao_new) VALUES (%s, %s, %s)",
+    "update_situacao_reclamacao_por_titulo": "UPDATE Reclamacoes SET situacao = (%s) WHERE titulo = (%s)",
+    "delete_reclamacao_por_titulo": "DELETE FROM Reclamacoes WHERE titulo = (%s)",
     "count_reclamacoes": "SELECT COUNT(*) FROM Reclamacoes",
     "count_reclamacoes_enel": "SELECT COUNT(*) FROM ReclamacoesEnel",
     "count_reclamacoes_geral": "SELECT COUNT(*) FROM ReclamacoesGeral",
@@ -408,4 +591,26 @@ ACTIONS = {
     "count_reclamacoes": action_count_reclamacoes,
     "count_reclamacoes_enel": action_count_reclamacoes_enel,
     "count_reclamacoes_geral": action_count_reclamacoes_geral,
+    "get_reclamante_por_id": action_get_reclamante_por_id,
+    "get_reclamante_por_cpf": action_get_reclamante_por_cpf,
+    "get_reclamante_por_rg": action_get_reclamante_por_rg,
+    "get_all_reclamantes": action_get_all_reclamantes,
+    "insert_reclamante": action_insert_reclamante,
+    "update_reclamante_by_id": action_update_reclamante_by_id,
+    "delete_reclamante_by_id": action_delete_reclamante_by_id,
+    "count_reclamantes": action_count_reclamantes,
+    "get_reclamado_por_id": action_get_reclamado_por_id,
+    "insert_reclamado": action_insert_reclamado,
+    "update_reclamado_por_id": action_update_reclamado_por_id,
+    "delete_reclamado_por_id": action_delete_reclamado_por_id,
+    "get_all_reclamados": action_get_all_reclamados,
+    "count_reclamados": action_count_reclamados,
+    "get_motivo_por_nome": action_get_motivo_por_nome,
+    "get_motivo_por_id": action_get_motivo_por_id,
+    "get_id_motivo_por_nome": action_get_id_motivo_por_nome,
+    "get_all_motivos": action_get_all_motivos,
+    "insert_motivo": action_insert_motivo,
+    "delete_motivo_por_nome": action_delete_motivo_por_nome,
+    "update_motivo_por_id": action_update_motivo_por_id,
+    "count_motivos": action_count_motivos,
 }
