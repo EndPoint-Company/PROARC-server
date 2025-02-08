@@ -356,6 +356,24 @@ def action_update_situacao_reclamacao_por_titulo(request):
     return {"status": "ok"}
 
 
+def action_count_reclamacoes(request):
+    quantidade = execute_query(QUERIES["count_reclamacoes"])
+
+    return {"count": quantidade[0][0]}
+
+
+def action_count_reclamacoes_enel(request):
+    quantidade = execute_query(QUERIES["count_reclamacoes_enel"])
+
+    return {"count": quantidade[0][0]}
+
+
+def action_count_reclamacoes_geral(request):
+    quantidade = execute_query(QUERIES["count_reclamacoes_geral"])
+
+    return {"count": quantidade[0][0]}
+
+
 QUERIES = {
     "get_reclamacao_id_por_titulo": "SELECT reclamacao_id FROM Reclamacoes WHERE titulo = (%s)",
     "get_reclamado_id_por_addr": "SELECT reclamado_id FROM Reclamados WHERE numero_addr = (%s) AND logradouro_addr = (%s) AND bairro_addr = (%s) AND cidade_addr = (%s) AND uf_addr = (%s) AND cep = (%s)",
@@ -375,6 +393,9 @@ QUERIES = {
     "get_all_reclamacoes": "SELECT * FROM Reclamacoes",
     "update_situacao_reclamacao_por_titulo": "UPDATE Reclamacoes SET situacao = (%s) WHERE titulo = (%s)",
     "insert_situacao_mudanca_historico": "INSERT INTO HistoricoMudancaSituacao (reclamacao_id, situacao_old, situacao_new) VALUES (%s, %s, %s)",
+    "count_reclamacoes": "SELECT COUNT(*) FROM Reclamacoes",
+    "count_reclamacoes_enel": "SELECT COUNT(*) FROM ReclamacoesEnel",
+    "count_reclamacoes_geral": "SELECT COUNT(*) FROM ReclamacoesGeral",
 }
 
 ACTIONS = {
@@ -383,4 +404,7 @@ ACTIONS = {
     "get_all_reclamacoes": action_get_all_reclamacoes,
     "get_all_reclamacoes_completo": action_get_all_reclamacoes_completo,
     "update_situacao_reclamacao_por_titulo": action_update_situacao_reclamacao_por_titulo,
+    "count_reclamacoes": action_count_reclamacoes,
+    "count_reclamacoes_enel": action_count_reclamacoes_enel,
+    "count_reclamacoes_geral": action_count_reclamacoes_geral,
 }
