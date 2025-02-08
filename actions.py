@@ -5,6 +5,7 @@ import json
 import global_config
 import global_config
 
+# Para saber qual função chamar, veja o dicionário ACTIONS no final do arquivo
 
 def handle_client(client_socket):
     client_socket.settimeout(8)
