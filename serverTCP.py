@@ -16,8 +16,8 @@ server.listen()
 print(f"[+] Listening on port {bind_ip} : {bind_port}")                            
 
 def handle_client_db(client_socket): 
-    import actions
-    actions.handle_client(client_socket)
+    import controladores
+    controladores.handle_client(client_socket)
 
 def handle_client_ftr(client_socket: socket.socket):
     import DwUp

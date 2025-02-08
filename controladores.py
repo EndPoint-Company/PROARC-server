@@ -1,11 +1,11 @@
 import datetime
 import socket
-import pyodbc
+import psycopg2
 import json
 import global_config
 
 def execute_query(query, params=()):
-    conn = pyodbc.connect(**global_config.get_db_config())
+    conn = psycopg2.connect(**global_config.db_config_pg)
     cursor = conn.cursor()
     cursor.execute(query, params)
     if query.strip().lower().startswith("select"):
@@ -19,20 +19,20 @@ def execute_query(query, params=()):
 
 def handle_get_motivo_by_nome(request):
     nome = request.get("nome")
-    query = "SELECT nome FROM Motivos WHERE nome = ?"
+    query = "SELECT nome FROM Motivos WHERE nome = (%s)"
     results = execute_query(query, (nome,))
     return {"motivo": results[0] if results else None}
 
 def handle_get_motivo_by_id(request):
     id = request.get("id")
-    query = "SELECT nome FROM Motivos WHERE motivo_id = ?"
+    query = "SELECT nome FROM Motivos WHERE motivo_id = (%s)"
     results = execute_query(query, (id,))
 
     return {"motivo": results[0] if results else None}
 
 def handle_get_id_motivo_by_nome(request):
     nome = request.get("nome")
-    query = "SELECT motivo_id FROM Motivos WHERE nome = ?"
+    query = "SELECT motivo_id FROM Motivos WHERE nome = (%s)"
     results = execute_query(query, (nome,))
     return {"id": results[0] if results else None}
 
@@ -43,20 +43,20 @@ def handle_get_all_motivos(request):
 
 def handle_add_motivo(request):
     motivo = request.get("motivo")
-    query = "INSERT INTO Motivos (nome) VALUES (?)"
+    query = "INSERT INTO Motivos (nome) VALUES ((%s))"
     execute_query(query, (motivo["Nome"],))
     return {"status": "success"}
 
 def handle_remove_motivo_by_nome(request):
     nome = request.get("nome")
-    query = "DELETE FROM Motivos WHERE nome = ?"
+    query = "DELETE FROM Motivos WHERE nome = (%s)"
     execute_query(query, (nome,))
     return {"status": "success"}
 
 def handle_update_motivo_by_id(request):
     nome = request.get("nome")
     novo_nome = request.get("novoNome")
-    query = "UPDATE Motivos SET nome = ? WHERE nome = ?"
+    query = "UPDATE Motivos SET nome = (%s) WHERE nome = (%s)"
     execute_query(query, (novo_nome or nome, nome))
     return {"status": "success"}
 
@@ -65,11 +65,13 @@ def handle_count_motivos(request):
     results = execute_query(query)
     return {"count": results[0][0]}
 
+######################################################
+
 def handle_get_reclamado_by_id(request):
     id = request.get("id")
     query = """
-        SELECT nome, cpf, cnpj, numero_rua, email, rua, bairro, cidade, uf 
-        FROM Reclamados WHERE reclamado_id = ?
+        SELECT nome, cpf, cnpj, numero_addr, logradouro_addr, bairro_addr, cidade_addr, uf_addr, cep, telefone, email
+        FROM Reclamados WHERE reclamado_id = (%s)
     """
     results = execute_query(query, (id,))
     return {"reclamado": results[0] if results else None}
@@ -77,13 +79,13 @@ def handle_get_reclamado_by_id(request):
 def handle_add_reclamado(request):
     reclamado = request.get("reclamado")
     query = """
-        INSERT INTO Reclamados (nome, cpf, cnpj, numero_rua, email, rua, bairro, cidade, uf)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO Reclamados (nome, cpf, cnpj, numero_addr, logradouro_addr, bairro_addr, cidade_addr, uf_addr, cep, telefone, email)
+        VALUES ((%s), (%s), (%s), (%s), (%s), (%s), (%s), (%s), (%s), (%s), (%s))
     """
     execute_query(query, (
         reclamado["Nome"], reclamado["Cpf"], reclamado["Cnpj"],
-        reclamado["NumeroDaRua"], reclamado["Email"], reclamado["Rua"],
-        reclamado["Bairro"], reclamado["Cidade"], reclamado["Estado"]
+        reclamado["Numero"], reclamado["Logradouro"], reclamado["Bairro"],
+        reclamado["Cidade"], reclamado["Uf"], reclamado["Cep"], reclamado["Telefone"], reclamado["Email"]
     ))
     return {"status": "success"}
 
@@ -92,25 +94,25 @@ def handle_update_reclamado_by_id(request):
     reclamado = request.get("reclamado")
     query = """
         UPDATE Reclamados
-        SET nome = ?, cpf = ?, cnpj = ?, numero_rua = ?, email = ?, rua = ?, bairro = ?, cidade = ?, uf = ?
-        WHERE reclamado_id = ?
+        SET nome = (%s), cpf = (%s), cnpj = (%s), numero_addr = (%s), logradouro_addr = (%s), bairro_addr = (%s), cidade_addr = (%s), uf_addr = (%s), cep = (%s), telefone = (%s), email = (%s)
+        WHERE reclamado_id = (%s)
     """
     execute_query(query, (
         reclamado["Nome"], reclamado["Cpf"], reclamado["Cnpj"],
-        reclamado["NumeroDaRua"], reclamado["Email"], reclamado["Rua"],
-        reclamado["Bairro"], reclamado["Cidade"], reclamado["Estado"], id
+        reclamado["Numero"], reclamado["Logradouro"], reclamado["Bairro"],
+        reclamado["Cidade"], reclamado["Uf"], reclamado["Cep"], reclamado["Telefone"], reclamado["Email"], id
     ))
     return {"status": "success"}
 
 def handle_remove_reclamado_by_id(request):
     id = request.get("id")
-    query = "DELETE FROM Reclamados WHERE reclamado_id = ?"
+    query = "DELETE FROM Reclamados WHERE reclamado_id = (%s)"
     execute_query(query, (id,))
     return {"status": "success"}
 
 def handle_get_all_reclamados(request):
     query = """
-        SELECT reclamado_id, nome, cpf, cnpj, numero_rua, email, rua, bairro, cidade, uf 
+        SELECT reclamado_id, nome, cpf, cnpj, numero_addr, logradouro_addr, bairro_addr, cidade_addr, uf_addr, cep, telefone, email 
         FROM Reclamados
     """
     results = execute_query(query)
@@ -121,10 +123,12 @@ def handle_count_reclamados(request):
     results = execute_query(query)
     return {"count": results[0][0]}
 
+######################################################
+
 def handle_get_reclamante_by_id(request):
     id = request.get("id")
     query = """
-        SELECT reclamante_id, nome, rg, cpf FROM Reclamantes WHERE reclamante_id = ?
+        SELECT reclamante_id, nome, rg, cpf, telefone, email FROM Reclamantes WHERE reclamante_id = (%s)
     """
     results = execute_query(query, (id,))
 
@@ -132,28 +136,28 @@ def handle_get_reclamante_by_id(request):
 
 def handle_get_reclamante_by_cpf(request):
     cpf = request.get("cpf")
-    query = "SELECT reclamante_id, nome, rg, cpf FROM Reclamantes WHERE cpf = ?"
+    query = "SELECT reclamante_id, nome, rg, cpf, telefone, email FROM Reclamantes WHERE cpf = (%s)"
     results = execute_query(query, (cpf,))
     return {"reclamante": results[0] if results else None}
 
 def handle_get_reclamante_by_rg(request):
     rg = request.get("rg")
-    query = "SELECT reclamante_id, nome, rg, cpf FROM Reclamantes WHERE rg = ?"
+    query = "SELECT reclamante_id, nome, rg, cpf, telefone, email FROM Reclamantes WHERE rg = (%s)"
     results = execute_query(query, (rg,))
     return {"reclamante": results[0] if results else None}
 
 def handle_get_all_reclamantes(request):
-    query = "SELECT reclamante_id, nome, rg, cpf FROM Reclamantes"
+    query = "SELECT reclamante_id, nome, rg, cpf, telefone, email FROM Reclamantes"
     results = execute_query(query)
     return {"reclamantes": results}
 
 def handle_add_reclamante(request):
     reclamante = request.get("reclamante")
     query = """
-        INSERT INTO Reclamantes (nome, rg, cpf)
-        VALUES (?, ?, ?)
+        INSERT INTO Reclamantes (nome, rg, cpf, telefone, email)
+        VALUES ((%s), (%s), (%s), (%s), (%s))
     """
-    execute_query(query, (reclamante["Nome"], reclamante["Rg"], reclamante["Cpf"]))
+    execute_query(query, (reclamante["Nome"], reclamante["Rg"], reclamante["Cpf"], reclamante["Telefone"], reclamante["Email"]))
     return {"status": "success"}
 
 def handle_update_reclamante_by_id(request):
@@ -161,15 +165,15 @@ def handle_update_reclamante_by_id(request):
     reclamante = request.get("reclamante")
     query = """
         UPDATE Reclamantes
-        SET nome = ?, rg = ?, cpf = ?
-        WHERE reclamante_id = ?
+        SET nome = (%s), rg = (%s), cpf = (%s), telefone = (%s), email = (%s)
+        WHERE reclamante_id = (%s)
     """
-    execute_query(query, (reclamante["Nome"], reclamante["Rg"], reclamante["Cpf"], id))
+    execute_query(query, (reclamante["Nome"], reclamante["Rg"], reclamante["Cpf"], reclamante["Telefone"], reclamante["Email"], id))
     return {"status": "success"}
 
 def handle_remove_reclamante_by_id(request):
     id = request.get("id")
-    query = "DELETE FROM Reclamantes WHERE reclamante_id = ?"
+    query = "DELETE FROM Reclamantes WHERE reclamante_id = (%s)"
     execute_query(query, (id,))
     return {"status": "success"}
 
@@ -178,18 +182,20 @@ def handle_count_reclamantes(request):
     results = execute_query(query)
     return {"count": results[0][0]}
 
+#############################################################
+
 def handle_get_processo_by_id(request):
     id = request.get("id")
     query = """
         SELECT processo_id, motivo_id, reclamante_id, titulo_processo, status_processo, path_processo, ano, data_audiencia 
-        FROM ProcessosAdministrativos WHERE processo_id = ?
+        FROM ProcessosAdministrativos WHERE processo_id = (%s)
     """
     results = execute_query(query, (id,))
     return {"processo": json.dumps(results, default=str) if results else None}
 
 def handle_get_processos_by_status(request):
     status = request.get("status")
-    query = "SELECT processo_id, motivo_id, reclamante_id, titulo_processo, status_processo, path_processo, ano, data_audiencia FROM ProcessosAdministrativos WHERE status_processo = ?"
+    query = "SELECT processo_id, motivo_id, reclamante_id, titulo_processo, status_processo, path_processo, ano, data_audiencia FROM ProcessosAdministrativos WHERE status_processo = (%s)"
     results = execute_query(query, (status,))
     return {"processos": results}
 
@@ -198,7 +204,7 @@ def handle_get_processos_by_reclamante_id(request):
     query = """
         SELECT processo_id, motivo_id, titulo_processo, status_processo, path_processo, ano, data_audiencia 
         FROM ProcessosAdministrativos 
-        WHERE reclamante_id = ?
+        WHERE reclamante_id = (%s)
     """
     results = execute_query(query, (reclamante_id,))
     return {"processos": results}
@@ -208,7 +214,7 @@ def handle_get_processos_by_motivo_id(request):
     query = """
         SELECT processo_id, motivo_id, titulo_processo, status_processo, path_processo, ano, data_audiencia 
         FROM ProcessosAdministrativos 
-        WHERE motivo_id = ?
+        WHERE motivo_id = (%s)
     """
     results = execute_query(query, (motivo_id,))
     return {"processos": results}
@@ -279,14 +285,14 @@ def handle_add_processo(request):
     processo = request.get("processo")
 
     nome = processo["Motivo"]["Nome"]
-    query = "SELECT motivo_id FROM Motivos WHERE nome = ?"
+    query = "SELECT motivo_id FROM Motivos WHERE nome = (%s)"
     results = execute_query(query, (nome,))
     motivo_id = results[0][0]
 
     reclamante = processo["Reclamante"]
-    query = "INSERT INTO Reclamantes (nome, rg, cpf) VALUES (?, ?, ?)"
+    query = "INSERT INTO Reclamantes (nome, rg, cpf) VALUES ((%s), (%s), (%s))"
     execute_query(query, (reclamante["Nome"], reclamante["Rg"], reclamante["Cpf"]))
-    query = "SELECT reclamante_id FROM Reclamantes WHERE cpf = ?"
+    query = "SELECT reclamante_id FROM Reclamantes WHERE cpf = (%s)"
     results = execute_query(query, (reclamante["Cpf"],))
     reclamante_id = results[0][0]
 
@@ -296,13 +302,13 @@ def handle_add_processo(request):
     path_processo = processo["CaminhoDoProcesso"]
     data_audiencia = processo["DataDaAudiencia"]
 
-    query = "INSERT INTO ProcessosAdministrativos (motivo_id, reclamante_id, titulo_processo, status_processo, path_processo, ano, data_audiencia) VALUES (?, ?, ?, ?, ?, ?, ?)"
+    query = "INSERT INTO ProcessosAdministrativos (motivo_id, reclamante_id, titulo_processo, status_processo, path_processo, ano, data_audiencia) VALUES ((%s), (%s), (%s), (%s), (%s), (%s), (%s))"
     execute_query(query, (motivo_id, reclamante_id, titulo_processo, status_processo, path_processo, ano, datetime.datetime.fromisoformat(data_audiencia)))
 
     reclamado = processo["Reclamado"]
     query = """
         INSERT INTO Reclamados (nome, cpf, cnpj, numero_rua, email, rua, bairro, cidade, uf)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES ((%s), (%s), (%s), (%s), (%s), (%s), (%s), (%s), (%s))
     """
     execute_query(query, (
         reclamado["Nome"], reclamado["Cpf"], reclamado["Cnpj"],
@@ -310,15 +316,15 @@ def handle_add_processo(request):
         reclamado["Bairro"], reclamado["Cidade"], reclamado["Estado"]
     ))
 
-    query = "SELECT processo_id FROM ProcessosAdministrativos WHERE titulo_processo = ?"
+    query = "SELECT processo_id FROM ProcessosAdministrativos WHERE titulo_processo = (%s)"
     results = execute_query(query, (titulo_processo,))
     processo_id = results[0][0]
 
-    query = "SELECT reclamado_id FROM Reclamados WHERE nome = ?"
+    query = "SELECT reclamado_id FROM Reclamados WHERE nome = (%s)"
     results = execute_query(query, (reclamado["Nome"],))
     reclamado_id = results[0][0]
 
-    query = "INSERT INTO RelacaoProcessoReclamado (processo_id, reclamado_id) VALUES (?, ?)"
+    query = "INSERT INTO RelacaoProcessoReclamado (processo_id, reclamado_id) VALUES ((%s), (%s))"
     execute_query(query, (processo_id, reclamado_id))
     return {"status": "success"}
 
@@ -332,13 +338,13 @@ def handle_update_processo_by_id(request):
     path_processo = request.get("path_processo")
     data_audiencia = request.get("data_audiencia")
 
-    query = "UPDATE ProcessosAdministrativos SET motivo_id = ?, reclamante_id = ?, titulo_processo = ?, status_processo = ?, path_processo = ?, ano = ?, data_audiencia = ? WHERE processo_id = ?"
+    query = "UPDATE ProcessosAdministrativos SET motivo_id = (%s), reclamante_id = (%s), titulo_processo = (%s), status_processo = (%s), path_processo = (%s), ano = (%s), data_audiencia = (%s) WHERE processo_id = (%s)"
     execute_query(query, (motivo_id, reclamante_id, titulo_processo, status_processo, path_processo, ano, data_audiencia, id))
     return {"status": "success"}
 
 def handle_remove_processo_by_id(request):
     id = request.get("id")
-    query = "DELETE FROM ProcessosAdministrativos WHERE processo_id = ?"
+    query = "DELETE FROM ProcessosAdministrativos WHERE processo_id = (%s)"
     execute_query(query, (id,))
     return {"status": "success"}
 
@@ -350,26 +356,26 @@ def handle_count_processos(request):
 def handle_add_relacao_processo_reclamado(request):
     processo_id = request.get("processo_id")
     reclamado_id = request.get("reclamado_id")
-    query = "INSERT INTO RelacaoProcessoReclamado (processo_id, reclamado_id) VALUES (?, ?)"
+    query = "INSERT INTO RelacaoProcessoReclamado (processo_id, reclamado_id) VALUES ((%s), (%s))"
     execute_query(query, (processo_id, reclamado_id))
     return {"status": "success"}
 
 def handle_remove_relacao_processo_reclamado(request):
     processo_id = request.get("processo_id")
     reclamado_id = request.get("reclamado_id")
-    query = "DELETE FROM RelacaoProcessoReclamado WHERE processo_id = ? AND reclamado_id = ?"
+    query = "DELETE FROM RelacaoProcessoReclamado WHERE processo_id = (%s) AND reclamado_id = (%s)"
     execute_query(query, (processo_id, reclamado_id))
     return {"status": "success"}
 
 def handle_get_reclamado_from_relacao_by_processo_id(request):
     processo_id = request.get("processo_id")
-    query = "SELECT reclamado_id FROM RelacaoProcessoReclamado WHERE processo_id = ?"
+    query = "SELECT reclamado_id FROM RelacaoProcessoReclamado WHERE processo_id = (%s)"
     results = execute_query(query, (processo_id,))
     return {"reclamados": results}
 
 def handle_get_processo_from_relacao_by_reclamado_id(request):
     reclamado_id = request.get("reclamado_id")
-    query = "SELECT processo_id FROM RelacaoProcessoReclamado WHERE reclamado_id = ?"
+    query = "SELECT processo_id FROM RelacaoProcessoReclamado WHERE reclamado_id = (%s)"
     results = execute_query(query, (reclamado_id,))
     return {"processos": results}
 
@@ -382,13 +388,13 @@ def handle_add_historico_mudanca_status(request):
     processo_id = request.get("processo_id")
     status_old = request.get("status_old")
     status_new = request.get("status_new")
-    query = "INSERT INTO HistoricoMudancaStatus (processo_id, status_old, status_new) VALUES (?, ?, ?)"
+    query = "INSERT INTO HistoricoMudancaStatus (processo_id, status_old, status_new) VALUES ((%s), (%s), (%s))"
     execute_query(query, (processo_id, status_old, status_new))
     return {"status": "success"}
 
 def handle_get_historico_by_processo_id(request):
     processo_id = request.get("processo_id")
-    query = "SELECT status_old, status_new, created_at FROM HistoricoMudancaStatus WHERE processo_id = ?"
+    query = "SELECT status_old, status_new, created_at FROM HistoricoMudancaStatus WHERE processo_id = (%s)"
     results = execute_query(query, (processo_id,))
     return {"historico": results}
 
