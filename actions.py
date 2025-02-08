@@ -1,6 +1,6 @@
 import datetime
 import socket
-import pyodbc
+import psycopg2
 import json
 import global_config
 import global_config
@@ -28,7 +28,7 @@ def handle_client(client_socket):
 
 
 def execute_query(query, params=()):
-    conn = pyodbc.connect(**global_config.db_config_pg)
+    conn = psycopg2.connect(**global_config.db_config_pg)
     cursor = conn.cursor()
     cursor.execute(query, params)
     if query.strip().lower().startswith("select"):
@@ -44,22 +44,36 @@ def execute_query(query, params=()):
 def action_insert_reclamacao(request):
     # todo o negocio que ambas tem em comum
     reclamacao = request.get("reclamacao")
-
+    print(reclamacao)
     if reclamacao["Motivo"] == None:
         return {"status": "faltando motivo"}  
     if reclamacao["Reclamante"] == None:
         return {"status":"faltando reclamante"} 
-    if reclamacao["Reclamado"] == None:
+    if reclamacao["Reclamados"] == None:
         return {"status":"faltando reclamado"}
     motivo_nome = reclamacao["Motivo"]["Nome"]
-    motivo_id = execute_query(QUERIES["get_motivo"], (motivo_nome,))[0][0]
+    motivo_id = execute_query(QUERIES["get_motivo_id_por_nome"], (motivo_nome,))[0][0]
+    print(motivo_id)
 
     reclamante_cpf = reclamacao["Reclamante"]["Cpf"]
+    try:
+        reclamante_id = execute_query(QUERIES["get_reclamante_por_cpf"], (reclamante_cpf,))[0][0]
+    except:
+        execute_query(
+            QUERIES["insert_reclamante"],
+            (
+                reclamacao["Reclamante"]["Nome"],
+                reclamacao["Reclamante"]["Rg"],
+                reclamacao["Reclamante"]["Cpf"],
+                reclamacao["Reclamante"]["Telefone"],
+                reclamacao["Reclamante"]["Email"],
+            ),
+        )
+        reclamante_id = execute_query(QUERIES["get_reclamante_por_cpf"], (reclamante_cpf,))[0][0]
+    
     reclamante_id = execute_query(QUERIES["get_reclamante_por_cpf"], (reclamante_cpf,))[0][0]
-    if reclamante_id == None:
-        execute_query(QUERIES["insert_reclamante"], (reclamacao["Reclamante"]["Nome"], reclamacao["Reclamante"]["Rg"], reclamacao["Reclamante"]["Cpf"], reclamacao["Reclamante"]["Telefone"], reclamacao["Reclamante"]["Email"]))
-    reclamante_id = execute_query(QUERIES["get_reclamante_por_cpf"], (reclamante_cpf,))[0][0]
-
+    
+    print("maconha")   
     procurador_id = None
     if reclamacao["Procurador"] in reclamacao:
         procurador_cpf = reclamacao["Procurador"]["Cpf"]
@@ -69,7 +83,7 @@ def action_insert_reclamacao(request):
         procurador_id = execute_query(QUERIES["get_procurador_por_cpf"], (procurador_cpf,))[0][0]
 
     reclamados_ids = []
-
+    print(procurador_id)
     for i in range(len(reclamacao["Reclamados"])):
         reclamado = reclamacao["Reclamados"][i]
         reclamado_id = execute_query(QUERIES["get_reclamado_id_por_addr"], (reclamado["Numero"], reclamado["Logradouro"], reclamado["Bairro"], reclamado["Cidade"], reclamado["Uf"], reclamado["Cep"]))[0][0]
@@ -77,11 +91,11 @@ def action_insert_reclamacao(request):
             execute_query(QUERIES["insert_reclamado"], (reclamado["Nome"], reclamado["Cpf"], reclamado["Cnpj"], reclamado["Numero"], reclamado["Logradouro"], reclamado["Bairro"], reclamado["Cidade"], reclamado["Uf"], reclamado["Telefone"], reclamado["Email"], reclamado["Cep"]))
         reclamado_id = execute_query(QUERIES["get_reclamado_id_por_addr"], (reclamado["Numero"], reclamado["Logradouro"], reclamado["Bairro"], reclamado["Cidade"], reclamado["Uf"], reclamado["Cep"]))[0][0]
         reclamados_ids.append(reclamado_id)
-
+    print(reclamados_ids)
     execute_query(QUERIES["insert_reclamacao"], (motivo_id, reclamante_id, procurador_id, reclamacao["Titulo"], reclamacao["Situacao"], reclamacao["CaminhoDir"], reclamacao["DataAbertura"], reclamacao["Criador"]))
 
     reclamacao_id = execute_query(QUERIES["get_reclamacao_id_por_titulo"], (reclamacao["Titulo"],))[0][0]
-
+    print(reclamacao_id)
     for i in range(len(reclamados_ids)):
         execute_query(QUERIES["insert_relacao_reclamado_reclamacao"], (reclamacao_id, reclamados_ids[i]))
 
@@ -96,19 +110,19 @@ def action_insert_reclamacao(request):
 
 
 QUERIES = {
-    "get_reclamacao_id_por_titulo": "SELECT reclamacao_id FROM Reclamacoes WHERE titulo = ?",
-    "get_reclamado_id_por_addr": "SELECT reclamado_id FROM Reclamados WHERE numero_addr = ? AND logradouro_addr = ? AND bairro_addr = ? AND cidade_addr = ? AND uf_addr = ? AND cep = ?",
-    "get_reclamado_id_por_cnpj": "SELECT reclamado_id FROM Reclamados WHERE cnpj = ?",
-    "get_reclamante_por_cpf": "SELECT reclamante_id FROM Reclamantes WHERE cpf = ?",
-    "get_procurador_por_cpf": "SELECT procurador_id FROM Procuradores WHERE cpf = ?",
-    "insert_reclamante": "INSERT INTO Reclamantes (nome, rg, cpf, telefone, email) VALUES (?, ?, ?, ?, ?)",
-    "insert_relacao_reclamado_reclamacao": "INSERT INTO RelacaoProcessoReclamado (reclamacao_id, reclamado_id) VALUES (?, ?)",
-    "insert_reclamado": "INSERT INTO Reclamados (nome, cpf, cnpj, numero_addr, logradouro_addr, bairro_addr, cidade_addr, uf_addr, telefone, email, cep) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-    "insert_reclamacao": "INSERT INTO Reclamacoes (motivo_id, reclamante_id, procurador_id, titulo, situacao, caminho_dir, data_abertura, criador) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-    "insert_reclamacao_geral": "INSERT INTO ReclamacoesGeral (reclamacao_id, data_audiencia, conciliador) VALUES (?, ?, ?)",
-    "insert_reclamacao_enel": "INSERT INTO ReclamacoesEnel (reclamacao_id, atendente, contato_enel_telefone, contato_enel_email, observacao) VALUES (?, ?, ?, ?, ?)",
-    "get_motivo_id_por_nome": "SELECT motivo_id, nome FROM Motivos WHERE nome = ?",
-    "get_reclamante_id_por_cpf": "SELECT reclamante_id FROM Reclamantes WHERE cpf = ?",
+    "get_reclamacao_id_por_titulo": "SELECT reclamacao_id FROM Reclamacoes WHERE titulo = (%s)",
+    "get_reclamado_id_por_addr": "SELECT reclamado_id FROM Reclamados WHERE numero_addr = (%s) AND logradouro_addr = (%s) AND bairro_addr = (%s) AND cidade_addr = (%s) AND uf_addr = (%s) AND cep = (%s)",
+    "get_reclamado_id_por_cnpj": "SELECT reclamado_id FROM Reclamados WHERE cnpj = (%s)",
+    "get_reclamante_por_cpf": "SELECT reclamante_id FROM Reclamantes WHERE cpf = (%s)",
+    "get_procurador_por_cpf": "SELECT procurador_id FROM Procuradores WHERE cpf = (%s)",
+    "insert_reclamante": "INSERT INTO Reclamantes (nome, rg, cpf, telefone, email) VALUES (%s, %s, %s, %s, %s)",
+    "insert_relacao_reclamado_reclamacao": "INSERT INTO RelacaoProcessoReclamado (reclamacao_id, reclamado_id) VALUES (%s, %s)",
+    "insert_reclamado": "INSERT INTO Reclamados (nome, cpf, cnpj, numero_addr, logradouro_addr, bairro_addr, cidade_addr, uf_addr, telefone, email, cep) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+    "insert_reclamacao": "INSERT INTO Reclamacoes (motivo_id, reclamante_id, procurador_id, titulo, situacao, caminho_dir, data_abertura, criador) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
+    "insert_reclamacao_geral": "INSERT INTO ReclamacoesGeral (reclamacao_id, data_audiencia, conciliador) VALUES (%s, %s, %s)",
+    "insert_reclamacao_enel": "INSERT INTO ReclamacoesEnel (reclamacao_id, atendente, contato_enel_telefone, contato_enel_email, observacao) VALUES (%s, %s, %s, %s, %s)",
+    "get_motivo_id_por_nome": "SELECT motivo_id FROM Motivos WHERE nome = (%s)",
+    "get_reclamante_id_por_cpf": "SELECT reclamante_id FROM Reclamantes WHERE cpf = (%s)",
 }
 
 ACTIONS = {

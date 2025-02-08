@@ -1,6 +1,6 @@
 import socket 
 import threading 
-import pyodbc as odbc
+import psycopg2
 import global_config
 import os
 
@@ -16,8 +16,8 @@ server.listen()
 print(f"[+] Listening on port {bind_ip} : {bind_port}")                            
 
 def handle_client_db(client_socket): 
-    import controladores
-    controladores.handle_client(client_socket)
+    import actions
+    actions.handle_client(client_socket)
 
 def handle_client_ftr(client_socket: socket.socket):
     import DwUp
@@ -64,19 +64,21 @@ def handle_client_pwd(client_socket):
 
 
 def send_request_to_db(request):
-    conn = odbc.connect(**global_config.get_db_config())
+    conn = psycopg2.connect(**global_config.db_config_pg)
     
     cursor = conn.cursor()
     cursor.execute(request)
     a = cursor.fetchall()
 
-    cursor.commit()
+    conn.commit()
+    cursor.close()
+    conn.close()
 
 
 def send_salt_to_client(client_socket):
     import json
 
-    conn = odbc.connect(**global_config.get_db_config())
+    conn = psycopg2.connect(**global_config.db_config_pg)
     
     cursor = conn.cursor()
     cursor.execute("SELECT salt FROM Usuarios")
@@ -86,11 +88,13 @@ def send_salt_to_client(client_socket):
 
     client_socket.send(data.encode("utf-8"))
     
-    cursor.commit()
+    conn.commit()
+    cursor.close()
+    conn.close()
 
 
 def check_password(hashed_password):
-    conn = odbc.connect(**global_config.get_db_config())
+    conn = psycopg2.connect(**global_config.db_config_pg)
         
     cursor = conn.cursor()
     cursor.execute("SELECT hash_and_salt FROM Usuarios")
