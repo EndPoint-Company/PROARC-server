@@ -1,3 +1,3 @@
-tuple_arr = [(1,)]
+array = [1]
 
-print(tuple_arr[0][0])  
+print(bool(array))

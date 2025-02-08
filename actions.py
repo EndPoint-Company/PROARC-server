@@ -56,8 +56,8 @@ def action_insert_reclamacao(request):
     print(motivo_id)
 
     reclamante_cpf = reclamacao["Reclamante"]["Cpf"]
-    reclamante_id = execute_query(QUERIES["get_reclamante_por_cpf"], (reclamante_cpf,))[0]
-    if reclamante_id == None:
+    reclamante_id = execute_query(QUERIES["get_reclamante_por_cpf"], (reclamante_cpf,))
+    if not bool(reclamante_id):
         execute_query(
             QUERIES["insert_reclamante"],
             (
@@ -74,8 +74,8 @@ def action_insert_reclamacao(request):
     procurador_id = None
     if reclamacao["Procurador"] in reclamacao:
         procurador_cpf = reclamacao["Procurador"]["Cpf"]
-        procurador_id = execute_query(QUERIES["get_procurador_por_cpf"], (procurador_cpf,))[0]
-        if procurador_id[0][0] == None:
+        procurador_id = execute_query(QUERIES["get_procurador_por_cpf"], (procurador_cpf,))
+        if not bool(procurador_id):
             execute_query(QUERIES["insert_procurador"], (reclamacao["Procurador"]["Nome"], reclamacao["Procurador"]["Rg"], reclamacao["Procurador"]["Cpf"], reclamacao["Procurador"]["Telefone"], reclamacao["Procurador"]["Email"]))
         procurador_id = execute_query(QUERIES["get_procurador_por_cpf"], (procurador_cpf,))[0][0]
 
@@ -84,9 +84,9 @@ def action_insert_reclamacao(request):
     for i in range(len(reclamacao["Reclamados"])):
         reclamado = reclamacao["Reclamados"][i]
         print(reclamado)
-        reclamado_id = execute_query(QUERIES["get_reclamado_id_por_addr"], (reclamado["Numero"], reclamado["Logradouro"], reclamado["Bairro"], reclamado["Cidade"], reclamado["Uf"], reclamado["Cep"]))[0]
+        reclamado_id = execute_query(QUERIES["get_reclamado_id_por_addr"], (reclamado["Numero"], reclamado["Logradouro"], reclamado["Bairro"], reclamado["Cidade"], reclamado["Uf"], reclamado["Cep"]))
         print(reclamado_id)
-        if reclamado_id == None:
+        if not bool(reclamado_id):
             execute_query(QUERIES["insert_reclamado"], (reclamado["Nome"], reclamado["Cpf"], reclamado["Cnpj"], reclamado["Numero"], reclamado["Logradouro"], reclamado["Bairro"], reclamado["Cidade"], reclamado["Uf"], reclamado["Telefone"], reclamado["Email"], reclamado["Cep"]))
         reclamado_id = execute_query(QUERIES["get_reclamado_id_por_addr"], (reclamado["Numero"], reclamado["Logradouro"], reclamado["Bairro"], reclamado["Cidade"], reclamado["Uf"], reclamado["Cep"]))[0][0]
         reclamados_ids.append(reclamado_id)
