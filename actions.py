@@ -98,10 +98,10 @@ def action_insert_reclamacao(request):
     for i in range(len(reclamados_ids)):
         execute_query(QUERIES["insert_relacao_reclamado_reclamacao"], (reclamacao_id, reclamados_ids[i]))
 
-    if reclamacao["DataAudiencia"] in reclamacao:
+    if "DataAudiencia" in reclamacao:
         # todo o negocio de reclamacao geral
         execute_query(QUERIES["insert_reclamacao_geral"], (reclamacao_id, reclamacao["DataAudiencia"], reclamacao["Conciliador"]))
-    if reclamacao["Observacao"] in reclamacao:
+    if "Observacao" in reclamacao:
         # todo o negocio de reclamacao enel
         execute_query(QUERIES["insert_reclamacao_enel"], (reclamacao_id, reclamacao["Atendente"], reclamacao["ContatoEnelTelefone"], reclamacao["ContatoEnelEmail"], reclamacao["Observacao"]))
 
