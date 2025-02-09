@@ -117,6 +117,78 @@ def action_get_reclamacao_por_titulo(request):
     return {"reclamacao": reclamacao}
 
 
+def serialize_datetime(obj):
+    if isinstance(obj, datetime.datetime):
+        return obj.isoformat()
+    return obj
+
+
+def aux_all_recl(request, reclamacoes):
+    import orjson
+
+    motivos = {m[0]: {"nome": m[1]} for m in execute_query(QUERIES["get_all_motivos"])}
+
+    reclamantes = {r[0]: {"nome": r[1], "rg": r[2], "cpf": r[3]} for r in execute_query(QUERIES["get_all_reclamantes"])}
+
+    procuradores = {p[0]: {
+        "nome": p[1], "rg": p[2], "cpf": p[3], "telefone": p[4],
+        "email": p[5], "created_at": serialize_datetime(p[6])
+    } for p in execute_query(QUERIES["get_all_procuradores"])}
+
+    # Criar relação entre reclamações e reclamados
+    relacoes = execute_query("SELECT reclamacao_id, reclamado_id FROM RelacaoProcessoReclamado")
+    relacao_dict = {}
+    for rec_id, reclamado_id in relacoes:
+        relacao_dict.setdefault(rec_id, []).append(reclamado_id)
+
+    # Criar dicionário de reclamados
+    reclamados = {
+        r[0]: {
+            "nome": r[1], "cpf": r[2], "cnpj": r[3], "numero_addr": r[4],
+            "logradouro_addr": r[5], "bairro_addr": r[6], "cidade_addr": r[7],
+            "uf_addr": r[8], "telefone": r[9], "email": r[10], "cep": r[11],
+            "created_at": serialize_datetime(r[12])
+        } for r in execute_query(QUERIES["get_all_reclamados"])
+    }
+
+    # Criar dicionário de informações gerais das reclamações
+    geral_dict = {
+        g[0]: {"data_audiencia": serialize_datetime(g[1]), "conciliador": g[2]}
+        for g in execute_query("SELECT reclamacao_id, data_audiencia, conciliador FROM ReclamacoesGeral")
+    }
+
+    # Criar dicionário de reclamações Enel
+    enel_dict = {
+        e[0]: {"atendente": e[1], "contato_enel_telefone": e[2], "contato_enel_email": e[3], "observacao": e[4]}
+        for e in execute_query("SELECT reclamacao_id, atendente, contato_enel_telefone, contato_enel_email, observacao FROM ReclamacoesEnel")
+    }
+
+    # Criar lista final de reclamações sem referências circulares
+    reclamacoes_completas = []
+    for rec in reclamacoes:
+        rec_id = rec[0]
+
+        reclamacao_completa = {
+            "motivo": dict(motivos.get(rec[1], {})),  
+            "reclamante": dict(reclamantes.get(rec[2], {})),  
+            "procurador": dict(procuradores.get(rec[3], {})) if rec[3] else {},  
+            "titulo": rec[4],
+            "situacao": rec[5],
+            "caminho_dir": rec[6],
+            "data_abertura": serialize_datetime(rec[7]),
+            "ultima_mudanca": serialize_datetime(rec[8]),
+            "criador": rec[9],
+            "created_at": serialize_datetime(rec[10]),
+            "reclamados": [dict(reclamados.get(rid, {})) for rid in relacao_dict.get(rec_id, [])],
+            "reclamacoes_geral": dict(geral_dict.get(rec_id, {})),
+            "reclamacoes_enel": dict(enel_dict.get(rec_id, {}))
+        }
+        reclamacoes_completas.append(reclamacao_completa)
+
+    # Serializar JSON sem erro de referência circular
+    return orjson.dumps({"reclamacoes": reclamacoes_completas}, default=serialize_datetime).decode()
+
+
 def action_get_p_reclamacoes(request):
     import datetime
     
@@ -129,225 +201,13 @@ def action_get_p_reclamacoes(request):
     """
     reclamacoes = execute_query(query_reclamacoes)
     
-    motivos = execute_query(QUERIES["get_all_motivos"])
-    motivos_dict = {m[0]: {"nome": m[1]} for m in motivos}
-    
-    reclamantes = execute_query(QUERIES["get_all_reclamantes"])
-    reclamantes_dict = {
-        r[0]: {"nome": r[1], "rg": r[2], "cpf": r[3]} for r in reclamantes
-    }
-    
-    procuradores = execute_query(QUERIES["get_all_procuradores"])
-    procuradores_dict = {
-        p[0]: {
-            "nome": p[1],
-            "rg": p[2],
-            "cpf": p[3],
-            "telefone": p[4],
-            "email": p[5],
-            "created_at": p[6].isoformat() if hasattr(p[6], "isoformat") else p[6]
-        }
-        for p in procuradores
-    }
-    
-    query_relacao = "SELECT reclamacao_id, reclamado_id FROM RelacaoProcessoReclamado"
-    relacoes = execute_query(query_relacao)
-    relacao_dict = {}
-    for r in relacoes:
-        rec_id, reclamado_id = r
-        relacao_dict.setdefault(rec_id, []).append(reclamado_id)
-    
-    reclamados = execute_query(QUERIES["get_all_reclamados"])
-    reclamados_dict = {
-        r[0]: {
-            "nome": r[1],
-            "cpf": r[2],
-            "cnpj": r[3],
-            "numero_addr": r[4],
-            "logradouro_addr": r[5],
-            "bairro_addr": r[6],
-            "cidade_addr": r[7],
-            "uf_addr": r[8],
-            "telefone": r[9],
-            "email": r[10],
-            "cep": r[11],
-            "created_at": r[12].isoformat() if hasattr(r[12], "isoformat") else r[12]
-        }
-        for r in reclamados
-    }
-    
-    query_reclamacoes_geral = "SELECT reclamacao_id, data_audiencia, conciliador FROM ReclamacoesGeral"
-    geral = execute_query(query_reclamacoes_geral)
-    geral_dict = {g[0]: {"data_audiencia": g[1].isoformat() if hasattr(g[1], "isoformat") else g[1], "conciliador": g[2]} for g in geral}
-    
-    query_reclamacoes_enel = """
-        SELECT reclamacao_id, atendente, contato_enel_telefone, contato_enel_email, observacao
-        FROM ReclamacoesEnel
-    """
-    enel = execute_query(query_reclamacoes_enel)
-    enel_dict = {
-        e[0]: {
-            "atendente": e[1],
-            "contato_enel_telefone": e[2],
-            "contato_enel_email": e[3],
-            "observacao": e[4]
-        }
-        for e in enel
-    }
-    
-    reclamacoes_completas = []
-    for rec in reclamacoes:
-        rec_id = rec[0]
-        motivo = motivos_dict.get(rec[1], {})
-        reclamante = reclamantes_dict.get(rec[2], {})
-        procurador = procuradores_dict.get(rec[3], {}) if rec[3] is not None else {}
-        titulo, situacao, caminho_dir = rec[4:7]
-        data_abertura = rec[7].isoformat() if hasattr(rec[7], "isoformat") else rec[7]
-        ultima_mudanca = rec[8].isoformat() if hasattr(rec[8], "isoformat") else rec[8]
-        criador, created_at = rec[9:11]
-        
-        reclamados_ids = relacao_dict.get(rec_id, [])
-        reclamados_list = [reclamados_dict.get(rid, {}) for rid in reclamados_ids]
-        
-        reclamacoes_geral = geral_dict.get(rec_id, {})    
-        reclamacoes_enel = enel_dict.get(rec_id, {})      
-        
-        reclamacao_completa = {
-            "motivo": motivo,
-            "reclamante": reclamante,
-            "procurador": procurador,
-            "titulo": titulo,
-            "situacao": situacao,
-            "caminho_dir": caminho_dir,
-            "data_abertura": data_abertura,
-            "ultima_mudanca": ultima_mudanca,
-            "criador": criador,
-            "created_at": created_at,
-            "reclamados": reclamados_list,
-            "reclamacoes_geral": reclamacoes_geral,
-            "reclamacoes_enel": reclamacoes_enel
-        }
-        reclamacoes_completas.append(reclamacao_completa)
-    
-    return {"reclamacoes": reclamacoes_completas}
+    return aux_all_recl(request, reclamacoes)
 
 
 def action_get_all_reclamacoes(request):
-    import datetime
-
     reclamacoes = execute_query(QUERIES["get_all_reclamacoes"])
     
-    motivos = execute_query(QUERIES["get_all_motivos"])
-    motivos_dict = { m[0]: {"nome": m[1]} for m in motivos }
-    
-    reclamantes = execute_query(QUERIES["get_all_reclamantes"])
-    reclamantes_dict = {
-        r[0]: {"nome": r[1], "rg": r[2], "cpf": r[3]}
-        for r in reclamantes
-    }
-    
-    procuradores = execute_query(QUERIES["get_all_procuradores"])
-    procuradores_dict = {
-        p[0]: {
-            "nome": p[1],
-            "rg": p[2],
-            "cpf": p[3],
-            "telefone": p[4],
-            "email": p[5],
-            "created_at": p[6].isoformat() if hasattr(p[6], "isoformat") else p[6]
-        }
-        for p in procuradores
-    }
-    
-    query_relacao = "SELECT reclamacao_id, reclamado_id FROM RelacaoProcessoReclamado"
-    relacoes = execute_query(query_relacao)
-    relacao_dict = {}
-    for r in relacoes:
-        rec_id = r[0]
-        reclamado_id = r[1]
-        if rec_id not in relacao_dict:
-            relacao_dict[rec_id] = []
-        relacao_dict[rec_id].append(reclamado_id)
-    
-    reclamados = execute_query(QUERIES["get_all_reclamados"])
-    reclamados_dict = {}
-    for r in reclamados:
-        reclamados_dict[r[0]] = {
-            "nome": r[1],
-            "cpf": r[2],
-            "cnpj": r[3],
-            "numero_addr": r[4],
-            "logradouro_addr": r[5],
-            "bairro_addr": r[6],
-            "cidade_addr": r[7],
-            "uf_addr": r[8],
-            "telefone": r[9],
-            "email": r[10],
-            "cep": r[11],
-            "created_at": r[12].isoformat() if hasattr(r[12], "isoformat") else r[12]
-        }
-    
-    query_reclamacoes_geral = "SELECT reclamacao_id, data_audiencia, conciliador FROM ReclamacoesGeral"
-    geral = execute_query(query_reclamacoes_geral)
-    geral_dict = {}
-    for g in geral:
-        geral_dict[g[0]] = {
-            "data_audiencia": g[1].isoformat() if hasattr(g[1], "isoformat") else g[1],
-            "conciliador": g[2]
-        }
-    
-    query_reclamacoes_enel = """
-        SELECT reclamacao_id, atendente, contato_enel_telefone, contato_enel_email, observacao
-        FROM ReclamacoesEnel
-    """
-    enel = execute_query(query_reclamacoes_enel)
-    enel_dict = {}
-    for e in enel:
-        enel_dict[e[0]] = {
-            "atendente": e[1],
-            "contato_enel_telefone": e[2],
-            "contato_enel_email": e[3],
-            "observacao": e[4]
-        }
-    
-    reclamacoes_completas = []
-    for rec in reclamacoes:
-        rec_id = rec[0]
-        motivo = motivos_dict.get(rec[1], {})
-        reclamante = reclamantes_dict.get(rec[2], {})
-        procurador = procuradores_dict.get(rec[3], {}) if rec[3] is not None else {}
-        titulo = rec[4]
-        situacao = rec[5]
-        caminho_dir = rec[6]
-        data_abertura = rec[7].isoformat() if hasattr(rec[7], "isoformat") else rec[7]
-        ultima_mudanca = rec[8].isoformat() if hasattr(rec[8], "isoformat") else rec[8]
-        criador = rec[9]
-        created_at = rec[10].isoformat() if hasattr(rec[10], "isoformat") else rec[10]
-        
-        reclamados_ids = relacao_dict.get(rec_id, [])
-        reclamados_list = [reclamados_dict.get(rid, {}) for rid in reclamados_ids]
-        
-        reclamacoes_geral = geral_dict.get(rec_id, {})    
-        reclamacoes_enel = enel_dict.get(rec_id, {})      
-        
-        reclamacao_completa = {
-            "motivo": motivo,
-            "reclamante": reclamante,
-            "procurador": procurador,
-            "titulo": titulo,
-            "situacao": situacao,
-            "caminho_dir": caminho_dir,
-            "data_abertura": data_abertura,
-            "ultima_mudanca": ultima_mudanca,
-            "criador": criador,
-            "created_at": created_at,
-            "reclamados": reclamados_list,
-            "reclamacoes_geral": reclamacoes_geral,
-            "reclamacoes_enel": reclamacoes_enel
-        }
-        reclamacoes_completas.append(reclamacao_completa)
-    
-    return {"reclamacoes": reclamacoes_completas}
+    return aux_all_recl(request, reclamacoes)
 
 
 def action_update_situacao_reclamacao_por_titulo(request):
