@@ -613,7 +613,7 @@ ACTIONS = {
     "count_reclamados": action_count_reclamados,
     "get_motivo_por_nome": action_get_motivo_por_nome,
     "get_motivo_por_id": action_get_motivo_por_id,
-    "get_id_motivo_por_nome": action_get_motivo_id_por_nome,
+    "get_motivo_id_por_nome": action_get_motivo_id_por_nome,
     "get_all_motivos": action_get_all_motivos,
     "insert_motivo": action_insert_motivo,
     "delete_motivo_por_nome": action_delete_motivo_por_nome,
