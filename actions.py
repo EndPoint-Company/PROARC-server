@@ -116,29 +116,30 @@ def action_get_reclamacao_por_titulo(request):
 
     return {"reclamacao": reclamacao}
 
-def action_get_all_reclamacoes(request):
-    query_reclamacoes = """
-        SELECT reclamacao_id, motivo_id, reclamante_id, procurador_id, titulo, situacao, caminho_dir, data_abertura, ultima_mudanca, criador, created_at
-        FROM Reclamacoes
+
+def action_get_p_reclamacoes(request):
+    import datetime
+    
+    limit = int(request.get("limit", 10))  
+    offset = int(request.get("offset", 0))  
+    
+    query_reclamacoes = f"""
+        SELECT * FROM Reclamacoes
+        LIMIT {limit} OFFSET {offset}
     """
     reclamacoes = execute_query(query_reclamacoes)
     
-    query_motivos = "SELECT motivo_id, nome FROM Motivos"
-    motivos = execute_query(query_motivos)
-    motivos_dict = {m[0]: {"motivo_id": m[0], "nome": m[1]} for m in motivos}
+    motivos = execute_query(QUERIES["get_all_motivos"])
+    motivos_dict = {m[0]: {"nome": m[1]} for m in motivos}
     
-    query_reclamantes = "SELECT reclamante_id, nome, rg, cpf FROM Reclamantes"
-    reclamantes = execute_query(query_reclamantes)
+    reclamantes = execute_query(QUERIES["get_all_reclamantes"])
     reclamantes_dict = {
-        r[0]: {"reclamante_id": r[0], "nome": r[1], "rg": r[2], "cpf": r[3]}
-        for r in reclamantes
+        r[0]: {"nome": r[1], "rg": r[2], "cpf": r[3]} for r in reclamantes
     }
     
-    query_procuradores = "SELECT procurador_id, nome, rg, cpf, telefone, email, created_at FROM Procuradores"
-    procuradores = execute_query(query_procuradores)
+    procuradores = execute_query(QUERIES["get_all_procuradores"])
     procuradores_dict = {
         p[0]: {
-            "procurador_id": p[0],
             "nome": p[1],
             "rg": p[2],
             "cpf": p[3],
@@ -150,24 +151,15 @@ def action_get_all_reclamacoes(request):
     }
     
     query_relacao = "SELECT reclamacao_id, reclamado_id FROM RelacaoProcessoReclamado"
-    relacao = execute_query(query_relacao)
+    relacoes = execute_query(query_relacao)
     relacao_dict = {}
-    for r in relacao:
-        reclamacao_id = r[0]
-        reclamado_id = r[1]
-        if reclamacao_id not in relacao_dict:
-            relacao_dict[reclamacao_id] = []
-        relacao_dict[reclamacao_id].append(reclamado_id)
+    for r in relacoes:
+        rec_id, reclamado_id = r
+        relacao_dict.setdefault(rec_id, []).append(reclamado_id)
     
-    query_reclamados = """
-        SELECT reclamado_id, nome, cpf, cnpj, numero_addr, logradouro_addr, bairro_addr, cidade_addr, uf_addr, telefone, email, cep, created_at
-        FROM Reclamados
-    """
-    reclamados = execute_query(query_reclamados)
-    reclamados_dict = {}
-    for r in reclamados:
-        reclamados_dict[r[0]] = {
-            "reclamado_id": r[0],
+    reclamados = execute_query(QUERIES["get_all_reclamados"])
+    reclamados_dict = {
+        r[0]: {
             "nome": r[1],
             "cpf": r[2],
             "cnpj": r[3],
@@ -181,61 +173,82 @@ def action_get_all_reclamacoes(request):
             "cep": r[11],
             "created_at": r[12].isoformat() if hasattr(r[12], "isoformat") else r[12]
         }
+        for r in reclamados
+    }
+    
+    query_reclamacoes_geral = "SELECT reclamacao_id, data_audiencia, conciliador FROM ReclamacoesGeral"
+    geral = execute_query(query_reclamacoes_geral)
+    geral_dict = {g[0]: {"data_audiencia": g[1].isoformat() if hasattr(g[1], "isoformat") else g[1], "conciliador": g[2]} for g in geral}
+    
+    query_reclamacoes_enel = """
+        SELECT reclamacao_id, atendente, contato_enel_telefone, contato_enel_email, observacao
+        FROM ReclamacoesEnel
+    """
+    enel = execute_query(query_reclamacoes_enel)
+    enel_dict = {
+        e[0]: {
+            "atendente": e[1],
+            "contato_enel_telefone": e[2],
+            "contato_enel_email": e[3],
+            "observacao": e[4]
+        }
+        for e in enel
+    }
     
     reclamacoes_completas = []
     for rec in reclamacoes:
-        reclamacao_id = rec[0]
+        rec_id = rec[0]
         motivo = motivos_dict.get(rec[1], {})
         reclamante = reclamantes_dict.get(rec[2], {})
         procurador = procuradores_dict.get(rec[3], {}) if rec[3] is not None else {}
-        reclamados_ids = relacao_dict.get(reclamacao_id, [])
+        titulo, situacao, caminho_dir = rec[4:7]
+        data_abertura = rec[7].isoformat() if hasattr(rec[7], "isoformat") else rec[7]
+        ultima_mudanca = rec[8].isoformat() if hasattr(rec[8], "isoformat") else rec[8]
+        criador, created_at = rec[9:11]
+        
+        reclamados_ids = relacao_dict.get(rec_id, [])
         reclamados_list = [reclamados_dict.get(rid, {}) for rid in reclamados_ids]
         
-        reclamacao_data = {
-            "reclamacao_id": reclamacao_id,
+        reclamacoes_geral = geral_dict.get(rec_id, {})    
+        reclamacoes_enel = enel_dict.get(rec_id, {})      
+        
+        reclamacao_completa = {
             "motivo": motivo,
             "reclamante": reclamante,
             "procurador": procurador,
-            "titulo": rec[4],
-            "situacao": rec[5],
-            "caminho_dir": rec[6],
-            "data_abertura": rec[7].isoformat() if hasattr(rec[7], "isoformat") else rec[7],
-            "ultima_mudanca": rec[8].isoformat() if hasattr(rec[8], "isoformat") else rec[8],
-            "criador": rec[9],
-            "created_at": rec[10].isoformat() if hasattr(rec[10], "isoformat") else rec[10],
-            "reclamados": reclamados_list
+            "titulo": titulo,
+            "situacao": situacao,
+            "caminho_dir": caminho_dir,
+            "data_abertura": data_abertura,
+            "ultima_mudanca": ultima_mudanca,
+            "criador": criador,
+            "created_at": created_at,
+            "reclamados": reclamados_list,
+            "reclamacoes_geral": reclamacoes_geral,
+            "reclamacoes_enel": reclamacoes_enel
         }
-        reclamacoes_completas.append(reclamacao_data)
+        reclamacoes_completas.append(reclamacao_completa)
     
     return {"reclamacoes": reclamacoes_completas}
 
 
-def action_get_all_reclamacoes_completo(request):
+def action_get_all_reclamacoes(request):
     import datetime
 
-    query_reclamacoes = """
-        SELECT reclamacao_id, motivo_id, reclamante_id, procurador_id, titulo, situacao, caminho_dir, 
-               data_abertura, ultima_mudanca, criador, created_at
-        FROM Reclamacoes
-    """
-    reclamacoes = execute_query(query_reclamacoes)
+    reclamacoes = execute_query(QUERIES["get_all_reclamacoes"])
     
-    query_motivos = "SELECT motivo_id, nome FROM Motivos"
-    motivos = execute_query(query_motivos)
-    motivos_dict = { m[0]: {"motivo_id": m[0], "nome": m[1]} for m in motivos }
+    motivos = execute_query(QUERIES["get_all_motivos"])
+    motivos_dict = { m[0]: {"nome": m[1]} for m in motivos }
     
-    query_reclamantes = "SELECT reclamante_id, nome, rg, cpf FROM Reclamantes"
-    reclamantes = execute_query(query_reclamantes)
+    reclamantes = execute_query(QUERIES["get_all_reclamantes"])
     reclamantes_dict = {
-        r[0]: {"reclamante_id": r[0], "nome": r[1], "rg": r[2], "cpf": r[3]}
+        r[0]: {"nome": r[1], "rg": r[2], "cpf": r[3]}
         for r in reclamantes
     }
     
-    query_procuradores = "SELECT procurador_id, nome, rg, cpf, telefone, email, created_at FROM Procuradores"
-    procuradores = execute_query(query_procuradores)
+    procuradores = execute_query(QUERIES["get_all_procuradores"])
     procuradores_dict = {
         p[0]: {
-            "procurador_id": p[0],
             "nome": p[1],
             "rg": p[2],
             "cpf": p[3],
@@ -256,15 +269,10 @@ def action_get_all_reclamacoes_completo(request):
             relacao_dict[rec_id] = []
         relacao_dict[rec_id].append(reclamado_id)
     
-    query_reclamados = """
-        SELECT reclamado_id, nome, cpf, cnpj, numero_addr, logradouro_addr, bairro_addr, cidade_addr, uf_addr, telefone, email, cep, created_at
-        FROM Reclamados
-    """
-    reclamados = execute_query(query_reclamados)
+    reclamados = execute_query(QUERIES["get_all_reclamados"])
     reclamados_dict = {}
     for r in reclamados:
         reclamados_dict[r[0]] = {
-            "reclamado_id": r[0],
             "nome": r[1],
             "cpf": r[2],
             "cnpj": r[3],
@@ -323,7 +331,6 @@ def action_get_all_reclamacoes_completo(request):
         reclamacoes_enel = enel_dict.get(rec_id, {})      
         
         reclamacao_completa = {
-            "reclamacao_id": rec_id,
             "motivo": motivo,
             "reclamante": reclamante,
             "procurador": procurador,
@@ -341,7 +348,6 @@ def action_get_all_reclamacoes_completo(request):
         reclamacoes_completas.append(reclamacao_completa)
     
     return {"reclamacoes": reclamacoes_completas}
-
 
 
 def action_update_situacao_reclamacao_por_titulo(request):
@@ -412,10 +418,10 @@ def action_insert_reclamante(request):
         VALUES ((%s), (%s), (%s), (%s), (%s))
     """
     execute_query(query, (reclamante["Nome"], reclamante["Rg"], reclamante["Cpf"], reclamante["Telefone"], reclamante["Email"]))
-    return {"status": "success"}
+    return {"status": "ok"}
 
 
-def action_update_reclamante_by_id(request):
+def action_update_reclamante_por_id(request):
     id = request.get("id")
     reclamante = request.get("reclamante")
     query = """
@@ -424,19 +430,18 @@ def action_update_reclamante_by_id(request):
         WHERE reclamante_id = (%s)
     """
     execute_query(query, (reclamante["Nome"], reclamante["Rg"], reclamante["Cpf"], reclamante["Telefone"], reclamante["Email"], id))
-    return {"status": "success"}
+    return {"status": "ok"}
 
 
-def action_delete_reclamante_by_id(request):
+def action_delete_reclamante_por_id(request):
     id = request.get("id")
     query = "DELETE FROM Reclamantes WHERE reclamante_id = (%s)"
     execute_query(query, (id,))
-    return {"status": "success"}
+    return {"status": "ok"}
 
 
 def action_count_reclamantes(request):
-    query = "SELECT COUNT(*) FROM Reclamantes"
-    results = execute_query(query)
+    results = execute_query(QUERIES["count_reclamantes"])
     return {"count": results[0][0]}
 
 
@@ -460,7 +465,7 @@ def action_insert_reclamado(request):
         reclamado["Numero"], reclamado["Logradouro"], reclamado["Bairro"],
         reclamado["Cidade"], reclamado["Uf"], reclamado["Cep"], reclamado["Telefone"], reclamado["Email"]
     ))
-    return {"status": "success"}
+    return {"status": "ok"}
 
 def action_update_reclamado_por_id(request):
     id = request.get("id")
@@ -475,27 +480,22 @@ def action_update_reclamado_por_id(request):
         reclamado["Numero"], reclamado["Logradouro"], reclamado["Bairro"],
         reclamado["Cidade"], reclamado["Uf"], reclamado["Cep"], reclamado["Telefone"], reclamado["Email"], id
     ))
-    return {"status": "success"}
+    return {"status": "ok"}
 
 def action_delete_reclamado_por_id(request):
     id = request.get("id")
     query = "DELETE FROM Reclamados WHERE reclamado_id = (%s)"
     execute_query(query, (id,))
-    return {"status": "success"}
+    return {"status": "ok"}
 
 
 def action_get_all_reclamados(request):
-    query = """
-        SELECT reclamado_id, nome, cpf, cnpj, numero_addr, logradouro_addr, bairro_addr, cidade_addr, uf_addr, cep, telefone, email 
-        FROM Reclamados
-    """
-    results = execute_query(query)
+    results = execute_query(QUERIES["get_all_reclamados"])
     return {"reclamados": results}
 
 
 def action_count_reclamados(request):
-    query = "SELECT COUNT(*) FROM Reclamados"
-    results = execute_query(query)
+    results = execute_query(QUERIES["count_reclamados"])
     return {"count": results[0][0]}
 
 
@@ -514,7 +514,7 @@ def action_get_motivo_por_id(request):
     return {"motivo": results[0] if results else None}
 
 
-def action_get_id_motivo_por_nome(request):
+def action_get_motivo_id_por_nome(request):
     nome = request.get("nome")
     query = "SELECT motivo_id FROM Motivos WHERE nome = (%s)"
     results = execute_query(query, (nome,))
@@ -531,14 +531,14 @@ def action_insert_motivo(request):
     motivo = request.get("motivo")
     query = "INSERT INTO Motivos (nome) VALUES ((%s))"
     execute_query(query, (motivo["Nome"],))
-    return {"status": "success"}
+    return {"status": "ok"}
 
 
 def action_delete_motivo_por_nome(request):
     nome = request.get("nome")
     query = "DELETE FROM Motivos WHERE nome = (%s)"
     execute_query(query, (nome,))
-    return {"status": "success"}
+    return {"status": "ok"}
 
 
 def action_update_motivo_por_id(request):
@@ -546,12 +546,11 @@ def action_update_motivo_por_id(request):
     novo_nome = request.get("novoNome")
     query = "UPDATE Motivos SET nome = (%s) WHERE nome = (%s)"
     execute_query(query, (novo_nome or nome, nome))
-    return {"status": "success"}
+    return {"status": "ok"}
 
 
 def action_count_motivos(request):
-    query = "SELECT COUNT(*) FROM Motivos"
-    results = execute_query(query)
+    results = execute_query(QUERIES["count_motivos"])
     return {"count": results[0][0]}
 
 
@@ -568,6 +567,10 @@ QUERIES = {
     "get_motivo_id_por_nome": "SELECT motivo_id FROM Motivos WHERE nome = (%s)",
     "get_reclamante_id_por_cpf": "SELECT reclamante_id FROM Reclamantes WHERE cpf = (%s)",
     "get_all_reclamacoes": "SELECT * FROM Reclamacoes",
+    "get_all_motivos": "SELECT * FROM Motivos",
+    "get_all_procuradores": "SELECT * FROM Procuradores",
+    "get_all_reclamados": "SELECT * FROM Reclamados",
+    "get_all_reclamantes": "SELECT * FROM Reclamantes",
     "insert_reclamante": "INSERT INTO Reclamantes (nome, rg, cpf, telefone, email) VALUES (%s, %s, %s, %s, %s)",
     "insert_relacao_reclamado_reclamacao": "INSERT INTO RelacaoProcessoReclamado (reclamacao_id, reclamado_id) VALUES (%s, %s)",
     "insert_reclamado": "INSERT INTO Reclamados (nome, cpf, cnpj, numero_addr, logradouro_addr, bairro_addr, cidade_addr, uf_addr, telefone, email, cep) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
@@ -580,13 +583,16 @@ QUERIES = {
     "count_reclamacoes": "SELECT COUNT(*) FROM Reclamacoes",
     "count_reclamacoes_enel": "SELECT COUNT(*) FROM ReclamacoesEnel",
     "count_reclamacoes_geral": "SELECT COUNT(*) FROM ReclamacoesGeral",
+    "count_reclamantes": "SELECT COUNT(*) FROM Reclamantes",
+    "count_reclamados": "SELECT COUNT(*) FROM Reclamados",
+    "count_motivos": "SELECT COUNT(*) FROM Motivos",
 }
 
 ACTIONS = {
     "insert_reclamacao": action_insert_reclamacao,
     "delete_reclamacao_por_titulo": action_delete_reclamacao_por_titulo,
     "get_all_reclamacoes": action_get_all_reclamacoes,
-    "get_all_reclamacoes_completo": action_get_all_reclamacoes_completo,
+    "get_p_reclamacoes": action_get_p_reclamacoes,
     "update_situacao_reclamacao_por_titulo": action_update_situacao_reclamacao_por_titulo,
     "count_reclamacoes": action_count_reclamacoes,
     "count_reclamacoes_enel": action_count_reclamacoes_enel,
@@ -596,8 +602,8 @@ ACTIONS = {
     "get_reclamante_por_rg": action_get_reclamante_por_rg,
     "get_all_reclamantes": action_get_all_reclamantes,
     "insert_reclamante": action_insert_reclamante,
-    "update_reclamante_by_id": action_update_reclamante_by_id,
-    "delete_reclamante_by_id": action_delete_reclamante_by_id,
+    "update_reclamante_por_id": action_update_reclamante_por_id,
+    "delete_reclamante_por_id": action_delete_reclamante_por_id,
     "count_reclamantes": action_count_reclamantes,
     "get_reclamado_por_id": action_get_reclamado_por_id,
     "insert_reclamado": action_insert_reclamado,
@@ -607,7 +613,7 @@ ACTIONS = {
     "count_reclamados": action_count_reclamados,
     "get_motivo_por_nome": action_get_motivo_por_nome,
     "get_motivo_por_id": action_get_motivo_por_id,
-    "get_id_motivo_por_nome": action_get_id_motivo_por_nome,
+    "get_id_motivo_por_nome": action_get_motivo_id_por_nome,
     "get_all_motivos": action_get_all_motivos,
     "insert_motivo": action_insert_motivo,
     "delete_motivo_por_nome": action_delete_motivo_por_nome,
