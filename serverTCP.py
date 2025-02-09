@@ -40,8 +40,6 @@ def handle_client_pwd(client_socket):
             except socket.timeout:
                 break
             print(msg)
-            if len(msg) <= 0:
-                break
             if len(msg) < 1024:
                 request += msg.hex("-").upper()
                 break
@@ -57,6 +55,7 @@ def handle_client_pwd(client_socket):
             client_socket.send("OK".encode("utf-8"))
             break
         client_socket.send("NOT OK".encode("utf-8")) 
+        request = ''
 
     print(f"[*] Received: {request}")
 
