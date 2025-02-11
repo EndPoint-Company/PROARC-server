@@ -2,7 +2,6 @@ import socket
 import threading 
 import psycopg2
 import global_config
-import os
 
 bind_ip = ""
 bind_port = 9999
@@ -78,7 +77,7 @@ def send_salt_to_client(client_socket):
     import json
 
     conn = psycopg2.connect(**global_config.db_config_pg)
-    
+     
     cursor = conn.cursor()
     cursor.execute("SELECT salt FROM Usuarios")
     a = cursor.fetchall()

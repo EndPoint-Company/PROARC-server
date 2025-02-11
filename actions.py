@@ -1,5 +1,4 @@
 import datetime
-import socket
 import psycopg2
 import json
 import global_config
@@ -106,15 +105,87 @@ def action_insert_reclamacao(request):
 def action_delete_reclamacao_por_titulo(request):
     titulo = request.get("titulo")
     execute_query(QUERIES["delete_reclamacao_por_titulo"], (titulo,))
-
     return {"status": "ok"}
 
 
 def action_get_reclamacao_por_titulo(request):
-    titulo = request.get("titulo")
+    import orjson
+    titulo = request.get("titulo")    
     reclamacao = execute_query(QUERIES["get_reclamacao_por_titulo"], (titulo,))
+    
+    motivoId = reclamacao[0][1]
+    motivos = {"nome motivo": {"nome": m[0]} for m in execute_query("SELECT nome FROM Motivos WHERE motivo_id = (%s)", (motivoId,))}
 
-    return {"reclamacao": reclamacao}
+    print(motivos)
+
+    reclamanteId = reclamacao[0][2]
+    reclamantes = {r[0]: {"nome": r[1], "rg": r[2], "cpf": r[3]} for r in execute_query("SELECT nome, rg, cpf, telefone, email FROM Reclamantes WHERE reclamante_id = (%s)",(reclamanteId,))}
+
+    print(reclamantes)
+
+    procuradorId = reclamacao[0][3]
+    procuradores = {p[0]: {
+        "nome": p[1], "rg": p[2], "cpf": p[3], "telefone": p[4],
+        "email": p[5], "created_at": serialize_datetime(p[6])
+    } for p in execute_query("SELECT procurador_id FROM Procuradores WHERE cpf = (%s)",(procuradorId,))}
+
+    print(procuradores)
+
+    # Criar relação entre reclamações e reclamados
+    relacaoId = reclamacao[0][0]
+    reclamadosIds = execute_query("SELECT reclamado_id from relacaoprocessoreclamado where reclamacao_id = (%s)",(relacaoId,))
+    print(reclamadosIds)
+
+    reclamado_ids = [r[0] for r in reclamadosIds]
+    print (reclamado_ids)
+    # Criar dicionário de reclamados apenas se houver IDs para buscar
+    reclamados = {}
+    if reclamado_ids:
+        placeholders = ', '.join(['%s'] * len(reclamado_ids))  # Criar os placeholders (%s, %s, %s, ...)
+        query = f"SELECT reclamado_id, nome, cpf, cnpj, numero_addr, logradouro_addr, bairro_addr, cidade_addr, uf_addr, telefone, email, cep, created_at FROM Reclamados WHERE reclamado_id IN ({placeholders})"
+        reclamados = {r[0]: {
+            "nome": r[1], "cpf": r[2], "cnpj": r[3], "numero_addr": r[4],
+            "logradouro_addr": r[5], "bairro_addr": r[6], "cidade_addr": r[7],
+            "uf_addr": r[8], "telefone": r[9], "email": r[10], "cep": r[11],
+            "created_at": serialize_datetime(r[12])
+        } for r in execute_query(query, tuple(reclamado_ids))}
+
+    geral_dict = {
+        g[0]: {"data_audiencia": serialize_datetime(g[1]), "conciliador": g[2]}
+        for g in execute_query("SELECT reclamacao_id, data_audiencia, conciliador FROM ReclamacoesGeral")
+    }
+
+    # Criar dicionário de reclamações Enel
+    enel_dict = {
+        e[0]: {"atendente": e[1], "contato_enel_telefone": e[2], "contato_enel_email": e[3], "observacao": e[4]}
+        for e in execute_query("SELECT reclamacao_id, atendente, contato_enel_telefone, contato_enel_email, observacao FROM ReclamacoesEnel")
+    }
+
+    # Criar lista final de reclamações sem referências circulares
+    reclamacoes_completas = []
+    for rec in reclamacao:
+        rec_id = rec[0]
+
+        reclamacao_completa = {
+            "motivo": motivos,  
+            "reclamante": reclamantes,  
+            "procurador": procuradores,  
+            "titulo": rec[4],
+            "situacao": rec[5],
+            "caminho_dir": rec[6],
+            "data_abertura": serialize_datetime(rec[7]),
+            "ultima_mudanca": serialize_datetime(rec[8]),
+            "criador": rec[9],
+            "created_at": serialize_datetime(rec[10]),
+            "reclamados": [dict(reclamados.get(rid, {})) for rid in reclamado_ids],
+            "reclamacoes_geral": dict(geral_dict.get(rec_id, {})),
+            "reclamacoes_enel": dict(enel_dict.get(rec_id, {}))
+        }
+        reclamacoes_completas.append(reclamacao_completa)
+        print(reclamacoes_completas)
+
+    # Serializar JSON sem erro de referência circular
+    return orjson.dumps({"reclamacoes": reclamacoes_completas}, default=serialize_datetime).decode()   
 
 
 def serialize_datetime(obj):
@@ -421,6 +492,7 @@ QUERIES = {
     "get_reclamacao_id_por_titulo": "SELECT reclamacao_id FROM Reclamacoes WHERE titulo = (%s)",
     "get_reclamado_id_por_addr": "SELECT reclamado_id FROM Reclamados WHERE numero_addr = (%s) AND logradouro_addr = (%s) AND bairro_addr = (%s) AND cidade_addr = (%s) AND uf_addr = (%s) AND cep = (%s)",
     "get_reclamado_id_por_cnpj": "SELECT reclamado_id FROM Reclamados WHERE cnpj = (%s)",
+    "get_reclamacao_por_titulo": "SELECT * FROM reclamacoes where titulo = (%s)",
     "get_reclamante_por_cpf": "SELECT reclamante_id FROM Reclamantes WHERE cpf = (%s)",
     "get_procurador_por_cpf": "SELECT procurador_id FROM Procuradores WHERE cpf = (%s)",
     "get_reclamacao_situacao_por_titulo": "SELECT situacao FROM Reclamacoes WHERE titulo = (%s)",
@@ -453,6 +525,7 @@ ACTIONS = {
     "delete_reclamacao_por_titulo": action_delete_reclamacao_por_titulo,
     "get_all_reclamacoes": action_get_all_reclamacoes,
     "get_p_reclamacoes": action_get_p_reclamacoes,
+    "get_reclamacao_por_titulo": action_get_reclamacao_por_titulo,
     "update_situacao_reclamacao_por_titulo": action_update_situacao_reclamacao_por_titulo,
     "count_reclamacoes": action_count_reclamacoes,
     "count_reclamacoes_enel": action_count_reclamacoes_enel,
