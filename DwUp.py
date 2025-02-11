@@ -1,18 +1,17 @@
 import socket
 import os
-import threading 
-import pyodbc as odbc
 
 block_size = 1024
 
 def handle_client_ftr(client_socket: socket.socket):
     try:
-        client_socket.settimeout(600000)
+        client_socket.settimeout(1000)
       
-        file_path = client_socket.recv(block_size).decode("utf-8").strip()
+        titulo = client_socket.recv(block_size).decode("utf-8").strip()
+        arquivo = client_socket.recv(block_size).decode("utf-8").strip()
+        file_path = os.path.join(os.sep, "home", "~", "recl", titulo, arquivo)
 
         if os.path.exists(file_path):
-
             print(f"[+] Sending file: {file_path}")
             with open(file_path, "rb") as file:
                 while (chunk := file.read(block_size)):
@@ -30,10 +29,17 @@ def handle_client_ftr(client_socket: socket.socket):
         client_socket.close()
 
 def handle_client_fts(client_socket: socket.socket):
+        titulo = client_socket.recv(block_size).decode("utf-8").strip()
+        arquivo = client_socket.recv(block_size).decode("utf-8").strip()
+        file_path = os.path.join(os.sep, "home", "~", "recl", titulo)
+
+        if not os.path.exists(file_path):
+             os.mkdir(file_path)
+
         try:
-            client_socket.settimeout(600)
+            client_socket.settimeout(1000)
             print("[+] Receiving file...")
-            with open("received_file_from_client", "wb") as file:
+            with open(os.path.join(file_path, arquivo), "wb") as file:
                     while True:
                         data = client_socket.recv(block_size)
                         if not data:
@@ -45,5 +51,3 @@ def handle_client_fts(client_socket: socket.socket):
 
         finally:
             client_socket.close()
-
-
