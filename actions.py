@@ -119,22 +119,22 @@ def action_get_reclamacao_por_titulo(request):
     print(motivos)
 
     reclamanteId = reclamacao[0][2]
-    reclamantes = {r[0]: {"nome": r[1], "rg": r[2], "cpf": r[3]} for r in execute_query("SELECT nome, rg, cpf, telefone, email FROM Reclamantes WHERE reclamante_id = (%s)",(reclamanteId,))}
+    reclamantes = {"reclamantes": {"nome": r[0], "rg": r[1], "cpf": r[2], "telefone": r[3], "email": r[4]} for r in execute_query("SELECT nome, rg, cpf, telefone, email FROM Reclamantes WHERE reclamante_id = (%s)", (reclamanteId,))}
+
 
     print(reclamantes)
 
     procuradorId = reclamacao[0][3]
-    procuradores = {p[0]: {
+    procuradores = {str(p[0]): {
         "nome": p[1], "rg": p[2], "cpf": p[3], "telefone": p[4],
         "email": p[5], "created_at": serialize_datetime(p[6])
-    } for p in execute_query("SELECT procurador_id FROM Procuradores WHERE cpf = (%s)",(procuradorId,))}
+    } for p in execute_query("SELECT * FROM Procuradores WHERE procurador_id = (%s)",(procuradorId,))}
 
     print(procuradores)
 
     # Criar relação entre reclamações e reclamados
     relacaoId = reclamacao[0][0]
     reclamadosIds = execute_query("SELECT reclamado_id from relacaoprocessoreclamado where reclamacao_id = (%s)",(relacaoId,))
-    print(reclamadosIds)
 
     reclamado_ids = [r[0] for r in reclamadosIds]
     print (reclamado_ids)
