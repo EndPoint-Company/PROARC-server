@@ -12,7 +12,7 @@ server.bind((bind_ip, bind_port))
 
 server.listen() 
 
-print(f"[+] Listening on port {bind_ip} : {bind_port}")                            
+print(f"[+] Listening on port {bind_port}")                            
 
 def handle_client_db(client_socket): 
     import actions
