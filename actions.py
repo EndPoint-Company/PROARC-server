@@ -116,13 +116,8 @@ def action_get_reclamacao_por_titulo(request):
     motivoId = reclamacao[0][1]
     motivos = {"nome motivo": {"nome": m[0]} for m in execute_query("SELECT nome FROM Motivos WHERE motivo_id = (%s)", (motivoId,))}
 
-    print(motivos)
-
     reclamanteId = reclamacao[0][2]
     reclamantes = {"reclamantes": {"nome": r[0], "rg": r[1], "cpf": r[2], "telefone": r[3], "email": r[4]} for r in execute_query("SELECT nome, rg, cpf, telefone, email FROM Reclamantes WHERE reclamante_id = (%s)", (reclamanteId,))}
-
-
-    print(reclamantes)
 
     procuradorId = reclamacao[0][3]
     procuradores = {str(p[0]): {
@@ -130,14 +125,12 @@ def action_get_reclamacao_por_titulo(request):
         "email": p[5], "created_at": serialize_datetime(p[6])
     } for p in execute_query("SELECT * FROM Procuradores WHERE procurador_id = (%s)",(procuradorId,))}
 
-    print(procuradores)
-
     # Criar relação entre reclamações e reclamados
     relacaoId = reclamacao[0][0]
     reclamadosIds = execute_query("SELECT reclamado_id from relacaoprocessoreclamado where reclamacao_id = (%s)",(relacaoId,))
 
     reclamado_ids = [r[0] for r in reclamadosIds]
-    print (reclamado_ids)
+    
     # Criar dicionário de reclamados apenas se houver IDs para buscar
     reclamados = {}
     if reclamado_ids:
@@ -181,8 +174,7 @@ def action_get_reclamacao_por_titulo(request):
             "reclamacoes_geral": dict(geral_dict.get(rec_id, {})),
             "reclamacoes_enel": dict(enel_dict.get(rec_id, {}))
         }
-        reclamacoes_completas.append(reclamacao_completa)
-        print(reclamacoes_completas)
+        reclamacoes_completas.append(reclamacao_completa)     
 
     # Serializar JSON sem erro de referência circular
     return orjson.dumps({"reclamacoes": reclamacoes_completas}, default=serialize_datetime).decode()   
@@ -199,7 +191,7 @@ def aux_all_recl(request, reclamacoes):
 
     motivos = {m[0]: {"nome": m[1]} for m in execute_query(QUERIES["get_all_motivos"])}
 
-    reclamantes = {r[0]: {"nome": r[1], "rg": r[2], "cpf": r[3]} for r in execute_query(QUERIES["get_all_reclamantes"])}
+    reclamantes = {r[0]: {"nome": r[1], "rg": r[2], "cpf": r[3], "telefone": r[4], "email": r[5]} for r in execute_query(QUERIES["get_all_reclamantes"])}
 
     procuradores = {p[0]: {
         "nome": p[1], "rg": p[2], "cpf": p[3], "telefone": p[4],
@@ -284,7 +276,8 @@ def action_get_all_reclamacoes(request):
 def action_update_situacao_reclamacao_por_titulo(request):
     titulo = request.get("titulo")
     situacao_new = request.get("situacao")
-
+    print(titulo)
+    print (situacao_new)
     reclamacao_id = execute_query(QUERIES["get_reclamacao_id_por_titulo"], (titulo,))[0][0]
     situacao_old = execute_query(QUERIES["get_reclamacao_situacao_por_titulo"], (titulo,))[0][0]
 
@@ -292,6 +285,109 @@ def action_update_situacao_reclamacao_por_titulo(request):
     execute_query(QUERIES["insert_situacao_mudanca_historico"], (reclamacao_id, situacao_old, situacao_new))
 
     return {"status": "ok"}
+
+
+
+def action_update_reclamacao(request):
+    titulo = request.get("titulo")
+    reclamacao = request.get("NovaReclamacao")
+
+    if reclamacao["Motivo"] is None:
+        return {"status": "faltando motivo"}  
+    if reclamacao["Reclamante"] is None:
+        return {"status":"faltando reclamante"} 
+    if reclamacao["Reclamados"] is None:
+        return {"status":"faltando reclamado"}
+    
+    motivo_nome = reclamacao["Motivo"]["Nome"] 
+    motivo_id = execute_query(QUERIES["get_motivo_id_por_nome"], (motivo_nome,))[0][0]
+   
+    reclamante_cpf = reclamacao["Reclamante"]["Cpf"]
+    reclamante_id = execute_query(QUERIES["get_reclamante_por_cpf"], (reclamante_cpf,))
+    if not bool(reclamante_id):
+        execute_query(
+            QUERIES["insert_reclamante"],
+            (
+                reclamacao["Reclamante"]["Nome"],
+                reclamacao["Reclamante"]["Rg"],
+                reclamacao["Reclamante"]["Cpf"],
+                reclamacao["Reclamante"]["Telefone"],
+                reclamacao["Reclamante"]["Email"],
+            ),
+        )
+    reclamante_id = execute_query(QUERIES["get_reclamante_por_cpf"], (reclamante_cpf,))[0][0]
+    procurador_id = None
+
+    if reclamacao.get("Procurador"):  # Verifica se "Procurador" existe e não é None
+        procurador_cpf = reclamacao["Procurador"].get("Cpf")
+    
+        if procurador_cpf:  # Verifica se o CPF do procurador não é None
+            procurador_id = execute_query(QUERIES["get_procurador_por_cpf"], (procurador_cpf,))
+        
+            if not procurador_id:  # Se não encontrou, insere o procurador
+                execute_query(QUERIES["insert_procurador"], (
+                    reclamacao["Procurador"]["Nome"], 
+                    reclamacao["Procurador"]["Rg"], 
+                    procurador_cpf, 
+                    reclamacao["Procurador"]["Telefone"], 
+                    reclamacao["Procurador"]["Email"]
+            ))
+            procurador_id = execute_query(QUERIES["get_procurador_por_cpf"], (procurador_cpf,))
+
+        procurador_id = procurador_id[0][0]
+
+    reclamacao_id = execute_query(QUERIES["get_reclamacao_id_por_titulo"], (titulo,))
+    if not reclamacao_id:
+        return {"status": "reclamacao_nao_encontrada"}
+    reclamacao_id = reclamacao_id[0][0]
+    
+    execute_query(QUERIES["update_reclamacao"], (
+        motivo_id,
+        reclamante_id,
+        procurador_id,
+        reclamacao["Titulo"],
+        reclamacao["Situacao"],
+        reclamacao["CaminhoDir"],
+        reclamacao["DataAbertura"],
+        reclamacao["Criador"],
+        reclamacao_id
+    ))
+    
+    if "DataAudiencia" in reclamacao:
+        execute_query(QUERIES["update_reclamacao_geral"], (
+            reclamacao["DataAudiencia"], 
+            reclamacao["Conciliador"],
+            reclamacao_id
+        ))
+    if "Observacao" in reclamacao:
+        execute_query(QUERIES["update_reclamacao_enel"], (
+            reclamacao["Atendente"], 
+            reclamacao["ContatoEnelTelefone"], 
+            reclamacao["ContatoEnelEmail"], 
+            reclamacao["Observacao"],
+            reclamacao_id
+        ))
+
+        execute_query(QUERIES["delete_reclamados_por_reclamacao"], (reclamacao_id,))  # Remove os antigos
+
+    for reclamado in reclamacao["Reclamados"]:
+        reclamado_cnpj = reclamado["Cnpj"]
+        reclamado_id = execute_query(QUERIES["get_reclamado_id_por_cnpj"], (reclamado_cnpj,))
+
+        if not reclamado_id:  # Se não existe, insere o novo reclamado
+            execute_query(QUERIES["insert_reclamado"], (reclamado["Nome"], reclamado["Cpf"], reclamado["Cnpj"], reclamado["Numero"], reclamado["Logradouro"], reclamado["Bairro"], reclamado["Cidade"], reclamado["Uf"], reclamado["Telefone"], reclamado["Email"], reclamado["Cep"]))
+            reclamado_id = execute_query(QUERIES["get_reclamado_id_por_cnpj"], (reclamado_cnpj,))
+
+        reclamado_id = reclamado_id[0][0]
+
+        # Insere a relação entre a reclamação e o reclamado
+        execute_query(QUERIES["insert_relacao_reclamacao_reclamado"], (reclamacao_id, reclamado_id))
+
+    # Retorna sucesso após todas as operações
+    return {"status": "ok"}
+    
+   
+
 
 
 def action_count_reclamacoes(request):
@@ -518,6 +614,11 @@ QUERIES = {
     "count_reclamantes": "SELECT COUNT(*) FROM Reclamantes",
     "count_reclamados": "SELECT COUNT(*) FROM Reclamados",
     "count_motivos": "SELECT COUNT(*) FROM Motivos",
+    "update_reclamacao_enel": "UPDATE ReclamacoesEnel SET atendente = COALESCE((%s), atendente), contato_enel_telefone = COALESCE((%s), contato_enel_telefone), contato_enel_email = COALESCE((%s), contato_enel_email), observacao = COALESCE((%s), observacao) WHERE reclamacao_id = (%s);",
+    "update_reclamacao_geral": "UPDATE ReclamacoesGeral SET data_audiencia = COALESCE((%s), data_audiencia), conciliador = COALESCE((%s), conciliador) WHERE reclamacao_id = (%s);",
+    "update_reclamacao": "UPDATE Reclamacoes SET motivo_id = (%s), reclamante_id = (%s), procurador_id = (%s), titulo = (%s), situacao = (%s), caminho_dir = (%s), data_abertura = (%s), ultima_mudanca = CURRENT_TIMESTAMP, criador = (%s) WHERE reclamacao_id = (%s);",
+    "delete_reclamados_por_reclamacao": "DELETE FROM RelacaoProcessoReclamado WHERE reclamacao_id = %s;",
+    "insert_relacao_reclamacao_reclamado": "INSERT INTO RelacaoProcessoReclamado (reclamacao_id, reclamado_id) VALUES (%s, %s);"
 }
 
 ACTIONS = {
@@ -527,6 +628,7 @@ ACTIONS = {
     "get_p_reclamacoes": action_get_p_reclamacoes,
     "get_reclamacao_por_titulo": action_get_reclamacao_por_titulo,
     "update_situacao_reclamacao_por_titulo": action_update_situacao_reclamacao_por_titulo,
+    "update_reclamacao": action_update_reclamacao,
     "count_reclamacoes": action_count_reclamacoes,
     "count_reclamacoes_enel": action_count_reclamacoes_enel,
     "count_reclamacoes_geral": action_count_reclamacoes_geral,
