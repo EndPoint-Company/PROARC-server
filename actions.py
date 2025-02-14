@@ -277,7 +277,7 @@ def action_update_situacao_reclamacao_por_titulo(request):
     titulo = request.get("titulo")
     situacao_new = request.get("situacao")
     print(titulo)
-    print (situacao_new)
+    print(situacao_new)
     reclamacao_id = execute_query(QUERIES["get_reclamacao_id_por_titulo"], (titulo,))[0][0]
     situacao_old = execute_query(QUERIES["get_reclamacao_situacao_por_titulo"], (titulo,))[0][0]
 
@@ -387,9 +387,6 @@ def action_update_reclamacao(request):
     return {"status": "ok"}
     
    
-
-
-
 def action_count_reclamacoes(request):
     quantidade = execute_query(QUERIES["count_reclamacoes"])
 
@@ -509,6 +506,7 @@ def action_update_reclamado_por_id(request):
     ))
     return {"status": "ok"}
 
+
 def action_delete_reclamado_por_id(request):
     id = request.get("id")
     query = "DELETE FROM Reclamados WHERE reclamado_id = (%s)"
@@ -556,23 +554,20 @@ def action_get_all_motivos(request):
 
 def action_insert_motivo(request):
     motivo = request.get("motivo")
-    query = "INSERT INTO Motivos (nome) VALUES ((%s))"
-    execute_query(query, (motivo["Nome"],))
+    execute_query(QUERIES["insert_motivo"], (motivo["Nome"],))
     return {"status": "ok"}
 
 
 def action_delete_motivo_por_nome(request):
     nome = request.get("nome")
-    query = "DELETE FROM Motivos WHERE nome = (%s)"
-    execute_query(query, (nome,))
+    execute_query(QUERIES["delete_motivo_por_nome"], (nome,))
     return {"status": "ok"}
 
 
 def action_update_motivo_por_id(request):
     nome = request.get("nome")
     novo_nome = request.get("novoNome")
-    query = "UPDATE Motivos SET nome = (%s) WHERE nome = (%s)"
-    execute_query(query, (novo_nome or nome, nome))
+    execute_query(QUERIES["update_motivo_por_id"], (novo_nome or nome, nome))
     return {"status": "ok"}
 
 
@@ -580,6 +575,10 @@ def action_count_motivos(request):
     results = execute_query(QUERIES["count_motivos"])
     return {"count": results[0][0]}
 
+def action_estatistica_mais_reclamados(request):
+    quantidade = request.get("quantidade", 5)
+    results = execute_query(QUERIES["estatistica_mais_reclamados"], (quantidade,))
+    return {"reclamados": results}
 
 
 
@@ -602,12 +601,14 @@ QUERIES = {
     "insert_reclamante": "INSERT INTO Reclamantes (nome, rg, cpf, telefone, email) VALUES (%s, %s, %s, %s, %s)",
     "insert_relacao_reclamado_reclamacao": "INSERT INTO RelacaoProcessoReclamado (reclamacao_id, reclamado_id) VALUES (%s, %s)",
     "insert_reclamado": "INSERT INTO Reclamados (nome, cpf, cnpj, numero_addr, logradouro_addr, bairro_addr, cidade_addr, uf_addr, telefone, email, cep) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+    "insert_motivo": "INSERT INTO Motivos (nome) VALUES ((%s))",
     "insert_reclamacao": "INSERT INTO Reclamacoes (motivo_id, reclamante_id, procurador_id, titulo, situacao, caminho_dir, data_abertura, criador) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
     "insert_reclamacao_geral": "INSERT INTO ReclamacoesGeral (reclamacao_id, data_audiencia, conciliador) VALUES (%s, %s, %s)",
     "insert_reclamacao_enel": "INSERT INTO ReclamacoesEnel (reclamacao_id, atendente, contato_enel_telefone, contato_enel_email, observacao) VALUES (%s, %s, %s, %s, %s)",
     "insert_situacao_mudanca_historico": "INSERT INTO HistoricoMudancaSituacao (reclamacao_id, situacao_old, situacao_new) VALUES (%s, %s, %s)",
     "update_situacao_reclamacao_por_titulo": "UPDATE Reclamacoes SET situacao = (%s) WHERE titulo = (%s)",
     "delete_reclamacao_por_titulo": "DELETE FROM Reclamacoes WHERE titulo = (%s)",
+    "delete_motivo_por_nome": "DELETE FROM Motivos WHERE nome = (%s)",
     "count_reclamacoes": "SELECT COUNT(*) FROM Reclamacoes",
     "count_reclamacoes_enel": "SELECT COUNT(*) FROM ReclamacoesEnel",
     "count_reclamacoes_geral": "SELECT COUNT(*) FROM ReclamacoesGeral",
@@ -616,9 +617,15 @@ QUERIES = {
     "count_motivos": "SELECT COUNT(*) FROM Motivos",
     "update_reclamacao_enel": "UPDATE ReclamacoesEnel SET atendente = COALESCE((%s), atendente), contato_enel_telefone = COALESCE((%s), contato_enel_telefone), contato_enel_email = COALESCE((%s), contato_enel_email), observacao = COALESCE((%s), observacao) WHERE reclamacao_id = (%s);",
     "update_reclamacao_geral": "UPDATE ReclamacoesGeral SET data_audiencia = COALESCE((%s), data_audiencia), conciliador = COALESCE((%s), conciliador) WHERE reclamacao_id = (%s);",
+    "update_motivo_por_id": "UPDATE Motivos SET nome = (%s) WHERE nome = (%s)",
     "update_reclamacao": "UPDATE Reclamacoes SET motivo_id = (%s), reclamante_id = (%s), procurador_id = (%s), titulo = (%s), situacao = (%s), caminho_dir = (%s), data_abertura = (%s), ultima_mudanca = CURRENT_TIMESTAMP, criador = (%s) WHERE reclamacao_id = (%s);",
     "delete_reclamados_por_reclamacao": "DELETE FROM RelacaoProcessoReclamado WHERE reclamacao_id = %s;",
-    "insert_relacao_reclamacao_reclamado": "INSERT INTO RelacaoProcessoReclamado (reclamacao_id, reclamado_id) VALUES (%s, %s);"
+    "insert_relacao_reclamacao_reclamado": "INSERT INTO RelacaoProcessoReclamado (reclamacao_id, reclamado_id) VALUES (%s, %s);",
+    "estatisticas_mais_reclamados": "SELECT r.nome, COUNT(rpr.reclamacao_id) AS total_reclamacoes FROM RelacaoProcessoReclamado AS rpr JOIN Reclamados AS r ON rpr.reclamado_id = r.reclamado_id GROUP BY r.reclamado_id, r.nome ORDER BY total_reclamacoes DESC LIMIT (%s);",
+    "estatistica_motivos_mais_usados": "SELECT m.nome AS motivo, COUNT(r.reclamacao_id) AS total_reclamacoes FROM Reclamacoes r JOIN Motivos m ON r.motivo_id = m.motivo_id GROUP BY m.nome ORDER BY total_reclamacoes DESC;",
+    "estatistica_reclamacoes_por_mes_ano_atual": "SELECT EXTRACT(MONTH FROM data_abertura) AS mes, COUNT(reclamacao_id) AS total_reclamacoes FROM Reclamacoes WHERE EXTRACT(YEAR FROM data_abertura) = EXTRACT(YEAR FROM CURRENT_DATE) GROUP BY mes ORDER BY mes;",
+    "estatistica_reclamacoes_por_mes_ano": "SELECT EXTRACT(MONTH FROM data_abertura) AS mes, COUNT(reclamacao_id) AS total_reclamacoes FROM Reclamacoes WHERE EXTRACT(YEAR FROM data_abertura) = (%s) GROUP BY mes ORDER BY mes;",
+    "estatistica_cidades_com_mais_reclamacoes": "SELECT r.cidade_addr AS cidade, COUNT(rpr.reclamacao_id) AS total_reclamacoes FROM RelacaoProcessoReclamado AS rpr JOIN Reclamados AS r ON rpr.reclamado_id = r.reclamado_id GROUP BY r.cidade_addr ORDER BY total_reclamacoes DESC;",
 }
 
 ACTIONS = {
@@ -654,4 +661,5 @@ ACTIONS = {
     "delete_motivo_por_nome": action_delete_motivo_por_nome,
     "update_motivo_por_id": action_update_motivo_por_id,
     "count_motivos": action_count_motivos,
+    "estatistica_mais_reclamados": action_estatistica_mais_reclamados
 }
