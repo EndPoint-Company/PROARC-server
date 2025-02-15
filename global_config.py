@@ -13,9 +13,9 @@ db_config_linux = {'Driver': '{/opt/microsoft/msodbcsql17/lib64/libmsodbcsql-17.
             'pwd':'proarc;'}
 
 db_config_pg = {
-    "database": "proarc-1",
+    "database": "proarc",
     "user": "postgres",
-    "host": "34.95.242.42",
+    "host": "35.198.56.170",
     "password": "proarc",
     "port": 5432
 }
