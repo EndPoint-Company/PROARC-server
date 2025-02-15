@@ -575,10 +575,24 @@ def action_count_motivos(request):
     results = execute_query(QUERIES["count_motivos"])
     return {"count": results[0][0]}
 
+
 def action_estatistica_mais_reclamados(request):
     quantidade = request.get("quantidade", 5)
     results = execute_query(QUERIES["estatistica_mais_reclamados"], (quantidade,))
     return {"reclamados": results}
+
+
+def action_estatistica_reclamacoes_por_mes_ano_atual(request):
+    query = QUERIES["estatistica_reclamacoes_por_mes_ano_atual"]
+    
+    resultados = execute_query(query) 
+
+    estatisticas = {str(mes): 0 for mes in range(1, 13)}
+    
+    for mes, total in resultados:
+        estatisticas[str(int(mes))] = total
+
+    return {"estatisticas": estatisticas}
 
 
 
@@ -626,6 +640,19 @@ QUERIES = {
     "estatistica_reclamacoes_por_mes_ano_atual": "SELECT EXTRACT(MONTH FROM data_abertura) AS mes, COUNT(reclamacao_id) AS total_reclamacoes FROM Reclamacoes WHERE EXTRACT(YEAR FROM data_abertura) = EXTRACT(YEAR FROM CURRENT_DATE) GROUP BY mes ORDER BY mes;",
     "estatistica_reclamacoes_por_mes_ano": "SELECT EXTRACT(MONTH FROM data_abertura) AS mes, COUNT(reclamacao_id) AS total_reclamacoes FROM Reclamacoes WHERE EXTRACT(YEAR FROM data_abertura) = (%s) GROUP BY mes ORDER BY mes;",
     "estatistica_cidades_com_mais_reclamacoes": "SELECT r.cidade_addr AS cidade, COUNT(rpr.reclamacao_id) AS total_reclamacoes FROM RelacaoProcessoReclamado AS rpr JOIN Reclamados AS r ON rpr.reclamado_id = r.reclamado_id GROUP BY r.cidade_addr ORDER BY total_reclamacoes DESC;",
+    "insert_usuario": "INSERT INTO Usuarios (nome, cargo, hash_and_salt, salt) VALUES (%s, %s, %s, %s)",
+    "get_usuario_por_nome": "SELECT * FROM Usuarios WHERE nome = (%s)",
+    "get_detalhes_reclamacao_por_titulo": "SELECT r.*, m.nome AS motivo_nome, rc.nome AS reclamante_nome, p.nome AS procurador_nome FROM Reclamacoes r JOIN Motivos m ON r.motivo_id = m.motivo_id JOIN Reclamantes rc ON r.reclamante_id = rc.reclamante_id LEFT JOIN Procuradores p ON r.procurador_id = p.procurador_id WHERE r.titulo = (%s)",
+    "get_reclamados_por_reclamacao_id": "SELECT rd.* FROM Reclamados rd JOIN RelacaoProcessoReclamado rpr ON rd.reclamado_id = rpr.reclamado_id WHERE rpr.reclamacao_id = (%s)",
+    "get_historico_situacao_por_reclamacao_id": "SELECT * FROM HistoricoMudancaSituacao WHERE reclamacao_id = (%s) ORDER BY changed_at DESC",
+    "get_reclamacao_geral_por_id": "SELECT * FROM ReclamacoesGeral WHERE reclamacao_id = (%s)",
+    "get_reclamacao_enel_por_id": "SELECT * FROM ReclamacoesEnel WHERE reclamacao_id = (%s)",
+    "check_titulo_existe": "SELECT EXISTS(SELECT 1 FROM Reclamacoes WHERE titulo = (%s))",
+    "estatistica_reclamacoes_por_criador": "SELECT criador, COUNT(*) AS total FROM Reclamacoes GROUP BY criador ORDER BY total DESC",
+    "estatistica_reclamacoes_por_situacao": "SELECT situacao, COUNT(*) AS total FROM Reclamacoes GROUP BY situacao ORDER BY total DESC",
+    "get_all_usuarios": "SELECT * FROM Usuarios",
+    "update_usuario_hash": "UPDATE Usuarios SET hash_and_salt = (%s), salt = (%s) WHERE nome = (%s)",
+    "delete_usuario_por_id": "DELETE FROM Usuarios WHERE usuario_id = (%s)"
 }
 
 ACTIONS = {
