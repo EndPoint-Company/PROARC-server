@@ -1,7 +1,7 @@
 import socket 
 import threading 
 import psycopg2
-import global_config
+import config.database as database
 
 bind_ip = ""
 bind_port = 9999
@@ -14,17 +14,21 @@ server.listen()
 
 print(f"[+] Listening on port {bind_port}")                            
 
+
 def handle_client_db(client_socket): 
-    import actions
+    import src.actions as actions
     actions.handle_client(client_socket)
 
+
 def handle_client_ftr(client_socket: socket.socket):
-    import DwUp
-    DwUp.handle_client_ftr(client_socket)
+    import src.file_transfer as file_transfer
+    file_transfer.handle_client_ftr(client_socket)
+
 
 def handle_client_fts(client_socket: socket.socket):
-    import DwUp
-    DwUp.handle_client_fts(client_socket)
+    import src.file_transfer as file_transfer
+    file_transfer.handle_client_fts(client_socket)
+
 
 def handle_client_pwd(client_socket): 
     request = ''
@@ -62,7 +66,7 @@ def handle_client_pwd(client_socket):
 
 
 def send_request_to_db(request):
-    conn = psycopg2.connect(**global_config.db_config_pg)
+    conn = psycopg2.connect(**database.credentials)
     
     cursor = conn.cursor()
     cursor.execute(request)
@@ -75,7 +79,7 @@ def send_request_to_db(request):
 def send_salt_to_client(client_socket):
     import json
 
-    conn = psycopg2.connect(**global_config.db_config_pg)
+    conn = psycopg2.connect(**database.credentials)
      
     cursor = conn.cursor()
     cursor.execute("SELECT salt FROM Usuarios")
@@ -91,7 +95,7 @@ def send_salt_to_client(client_socket):
 
 
 def check_password(hashed_password):
-    conn = psycopg2.connect(**global_config.db_config_pg)
+    conn = psycopg2.connect(**database.credentials)
         
     cursor = conn.cursor()
     cursor.execute("SELECT hash_and_salt FROM Usuarios")

@@ -1,8 +1,8 @@
 import datetime
 import psycopg2
 import json
-import global_config
-import global_config
+import config.database as database
+import config.database as database
 
 # Para saber qual função chamar, veja o dicionário ACTIONS no final do arquivo
 
@@ -28,7 +28,7 @@ def handle_client(client_socket):
 
 
 def execute_query(query, params=()):
-    conn = psycopg2.connect(**global_config.db_config_pg)
+    conn = psycopg2.connect(**database.credentials)
     cursor = conn.cursor()
     cursor.execute(query, params)
     if query.strip().lower().startswith("select"):
