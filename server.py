@@ -2,6 +2,7 @@ import socket
 import threading 
 import psycopg2
 import config.database as database
+from src.utils.colors import Colors as colors
 
 bind_ip = ""
 bind_port = 9999
@@ -12,7 +13,7 @@ server.bind((bind_ip, bind_port))
 
 server.listen() 
 
-print(f"[+] Listening on port {bind_port}")                            
+print(f"{colors.LIGHT_GREEN}[+] Listening on port {bind_port}{colors.END}")                            
 
 
 def handle_client_db(client_socket): 
@@ -48,7 +49,6 @@ def handle_client_pwd(client_socket):
                 break
             if msg == b"BYE":
                 break
-            #request += msg.decode("utf-8")
             request += msg.hex("-").upper()
 
         print("request is: "+request)
@@ -60,7 +60,7 @@ def handle_client_pwd(client_socket):
         client_socket.send("NOT OK".encode("utf-8")) 
         request = ''
 
-    print(f"[*] Received: {request}")
+    print(f"{colors.LIGHT_BLUE}[*] Received: {request}{colors.END}")
 
     client_socket.close()
 
@@ -102,7 +102,7 @@ def check_password(hashed_password):
     result = cursor.fetchall()
 
     for hash_and_salt in result:
-        print("hash_and_salt: " + hash_and_salt[0] + " - " + hashed_password)
+        print("hash_and_salt: " + hash_and_salt[0] + "\nhashed_password: " + hashed_password)
         if hash_and_salt[0] == hashed_password:
             return True
 
@@ -111,9 +111,11 @@ def check_password(hashed_password):
 
 while True: 
     client, addr = server.accept() 
-    print(f"[+] Accepted connection from: {addr[0]}:{addr[1]}")
+    print(f"{colors.LIGHT_GREEN}[+] Accepted connection from: {addr[0]}:{addr[1]}{colors.END}")
 
     r = client.recv(8).decode("utf-8")
+
+    print(f"{colors.LIGHT_BLUE}[+] Starting to process a request of type: {r}{colors.END}")
 
     if (r == "DB"):
         client_handler = threading.Thread(target=handle_client_db, args=(client,))

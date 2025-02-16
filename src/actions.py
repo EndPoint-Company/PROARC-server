@@ -3,6 +3,7 @@ import psycopg2
 import json
 import config.database as database
 import config.database as database
+from utils.colors import Colors as colors
 
 # Para saber qual função chamar, veja o dicionário ACTIONS no final do arquivo
 
@@ -21,7 +22,7 @@ def handle_client(client_socket):
 
         client_socket.send(json.dumps(response).encode("utf-8"))
     except Exception as e:
-        print(f"Error: {e}")
+        print(f"{colors.LIGHT_RED}Error: {e}{colors.END}")
         client_socket.send(json.dumps({"error": str(e)}).encode("utf-8"))
     finally:
         client_socket.close()
@@ -99,12 +100,15 @@ def action_insert_reclamacao(request):
         # todo o negocio de reclamacao enel
         execute_query(QUERIES["insert_reclamacao_enel"], (reclamacao_id, reclamacao["Atendente"], reclamacao["ContatoEnelTelefone"], reclamacao["ContatoEnelEmail"], reclamacao["Observacao"]))
 
+    print("[DB] Reclamação inserida com sucesso")
     return {"status": "ok"}
 
 
 def action_delete_reclamacao_por_titulo(request):
     titulo = request.get("titulo")
     execute_query(QUERIES["delete_reclamacao_por_titulo"], (titulo,))
+
+    print("[DB] Reclamação deletada com sucesso")
     return {"status": "ok"}
 
 
@@ -232,6 +236,7 @@ def action_update_reclamacao(request):
             reclamacao_id
         ))
 
+    print("[DB] Reclamação atualizada com sucesso")
     return {"status": "ok"}
 
 
@@ -304,7 +309,11 @@ def action_get_reclamacao_por_titulo(request):
         reclamacoes_completas.append(reclamacao_completa)     
 
     # Serializar JSON sem erro de referência circular
-    return orjson.dumps({"reclamacoes": reclamacoes_completas}, default=serialize_datetime).decode()   
+    return_json = orjson.dumps({"reclamacoes": reclamacoes_completas}, default=serialize_datetime).decode()
+
+    print(f"[DB] {return_json}")
+
+    return return_json
 
 
 def serialize_datetime(obj):
@@ -376,7 +385,11 @@ def aux_all_recl(request, reclamacoes):
         reclamacoes_completas.append(reclamacao_completa)
 
     # Serializar JSON sem erro de referência circular
-    return orjson.dumps({"reclamacoes": reclamacoes_completas}, default=serialize_datetime).decode()
+    return_json = orjson.dumps({"reclamacoes": reclamacoes_completas}, default=serialize_datetime).decode()
+
+    print(f"[DB] {return_json}")
+
+    return return_json
 
 
 def action_get_p_reclamacoes(request):
@@ -411,24 +424,29 @@ def action_update_situacao_reclamacao_por_titulo(request):
     execute_query(QUERIES["update_situacao_reclamacao_por_titulo"], (situacao_new, titulo))
     execute_query(QUERIES["insert_situacao_mudanca_historico"], (reclamacao_id, situacao_old, situacao_new))
 
+    print(f"[DB] Situação da reclamação {titulo} atualizada com sucesso: {situacao_old} -> {situacao_new}")
+
     return {"status": "ok"}
     
    
 def action_count_reclamacoes(request):
     quantidade = execute_query(QUERIES["count_reclamacoes"])
 
+    print(f"[DB] Quantidade de reclamações: {quantidade[0][0]}")
     return {"count": quantidade[0][0]}
 
 
 def action_count_reclamacoes_enel(request):
     quantidade = execute_query(QUERIES["count_reclamacoes_enel"])
 
+    print(f"[DB] Quantidade de reclamações Enel: {quantidade[0][0]}")
     return {"count": quantidade[0][0]}
 
 
 def action_count_reclamacoes_geral(request):
     quantidade = execute_query(QUERIES["count_reclamacoes_geral"])
 
+    print(f"[DB] Quantidade de reclamações gerais: {quantidade[0][0]}")
     return {"count": quantidade[0][0]}
 
 
@@ -439,6 +457,7 @@ def action_get_reclamante_por_id(request):
     """
     results = execute_query(query, (id,))
 
+    print(f"[DB] Reclamante encontrado: {results[0] if results else None}")
     return {"reclamante": results[0] if results else None}
 
 
@@ -446,6 +465,8 @@ def action_get_reclamante_por_cpf(request):
     cpf = request.get("cpf")
     query = "SELECT reclamante_id, nome, rg, cpf, telefone, email FROM Reclamantes WHERE cpf = (%s)"
     results = execute_query(query, (cpf,))
+
+    print(f"[DB] Reclamante encontrado: {results[0] if results else None}")
     return {"reclamante": results[0] if results else None}
 
 
@@ -453,12 +474,16 @@ def action_get_reclamante_por_rg(request):
     rg = request.get("rg")
     query = "SELECT reclamante_id, nome, rg, cpf, telefone, email FROM Reclamantes WHERE rg = (%s)"
     results = execute_query(query, (rg,))
+
+    print(f"[DB] Reclamante encontrado: {results[0] if results else None}")
     return {"reclamante": results[0] if results else None}
 
 
 def action_get_all_reclamantes(request):
     query = "SELECT reclamante_id, nome, rg, cpf, telefone, email FROM Reclamantes"
     results = execute_query(query)
+
+    print(f"[DB] Reclamantes encontrados: {results}")
     return {"reclamantes": results}
 
 
@@ -469,6 +494,8 @@ def action_insert_reclamante(request):
         VALUES ((%s), (%s), (%s), (%s), (%s))
     """
     execute_query(query, (reclamante["Nome"], reclamante["Rg"], reclamante["Cpf"], reclamante["Telefone"], reclamante["Email"]))
+
+    print(f"[DB] Reclamante inserido com sucesso: {reclamante}")
     return {"status": "ok"}
 
 
@@ -481,6 +508,8 @@ def action_update_reclamante_por_id(request):
         WHERE reclamante_id = (%s)
     """
     execute_query(query, (reclamante["Nome"], reclamante["Rg"], reclamante["Cpf"], reclamante["Telefone"], reclamante["Email"], id))
+
+    print(f"[DB] Reclamante atualizado com sucesso: {reclamante}")
     return {"status": "ok"}
 
 
@@ -488,11 +517,15 @@ def action_delete_reclamante_por_id(request):
     id = request.get("id")
     query = "DELETE FROM Reclamantes WHERE reclamante_id = (%s)"
     execute_query(query, (id,))
+
+    print(f"[DB] Reclamante deletado com sucesso: {id}")
     return {"status": "ok"}
 
 
 def action_count_reclamantes(request):
     results = execute_query(QUERIES["count_reclamantes"])
+
+    print(f"[DB] Quantidade de reclamantes: {results[0][0]}")
     return {"count": results[0][0]}
 
 
@@ -503,6 +536,8 @@ def action_get_reclamado_por_id(request):
         FROM Reclamados WHERE reclamado_id = (%s)
     """
     results = execute_query(query, (id,))
+
+    print(f"[DB] Reclamado encontrado: {results[0] if results else None}")
     return {"reclamado": results[0] if results else None}
 
 def action_insert_reclamado(request):
@@ -516,6 +551,8 @@ def action_insert_reclamado(request):
         reclamado["Numero"], reclamado["Logradouro"], reclamado["Bairro"],
         reclamado["Cidade"], reclamado["Uf"], reclamado["Cep"], reclamado["Telefone"], reclamado["Email"]
     ))
+
+    print(f"[DB] Reclamado inserido com sucesso: {reclamado}")
     return {"status": "ok"}
 
 def action_update_reclamado_por_id(request):

@@ -1,5 +1,6 @@
 import socket
 import os
+from utils.colors import Colors as colors
 
 block_size = 1024
 
@@ -11,19 +12,20 @@ def handle_client_ftr(client_socket: socket.socket):
         arquivo = client_socket.recv(block_size).decode("utf-8").strip()
         file_path = os.path.join(os.sep, "home", "~", "recl", titulo, arquivo)
 
+        print(f"{colors.LIGHT_BLUE}[FT] file_path: {file_path}{colors.END}")
+
         if os.path.exists(file_path):
-            print(f"[+] Sending file: {file_path}")
             with open(file_path, "rb") as file:
                 while (chunk := file.read(block_size)):
                     client_socket.send(chunk)
-            print("[+] File sent successfully.")
+            print("[FT] File sent successfully.")
 
         else:
-            print(f"[-] File not found: {file_path}")
+            print(f"{colors.LIGHT_RED}[FT] File not found: {file_path}{colors.END}")
             client_socket.send(b"ERROR: File not found.")
 
     except Exception as e:
-        print(f"[-] Error in handle_client_ftr: {e}")
+        print(f"{colors.LIGHT_RED}[FT] Error in handle_client_ftr: {e}{colors.END}")
 
     finally:
         client_socket.close()
@@ -32,6 +34,8 @@ def handle_client_fts(client_socket: socket.socket):
         titulo = client_socket.recv(block_size).decode("utf-8").strip()
         arquivo = client_socket.recv(block_size).decode("utf-8").strip()
         file_path = os.path.join(os.sep, "home", "~", "recl", titulo)
+
+        print(f"{colors.LIGHT_BLUE}[FT] file_path: {file_path}{colors.END}")
 
         if not os.path.exists(file_path):
              os.mkdir(file_path)
@@ -45,9 +49,9 @@ def handle_client_fts(client_socket: socket.socket):
                         if not data:
                             break
                         file.write(data)
-                    print("[+] File received successfully.")     
+                    print(f"{colors.LIGHT_GREEN}[FT] File received successfully.{colors.END}")     
         except Exception as e:
-            print(f"[-] Error in handle_client_ftr: {e}")
+            print(f"{colors.LIGHT_RED}[FT] Error in handle_client_fts: {e}{colors.END}")
 
         finally:
             client_socket.close()
