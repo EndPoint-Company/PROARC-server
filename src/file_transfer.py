@@ -1,6 +1,6 @@
 import socket
 import os
-from utils.colors import Colors as colors
+from src.utils.colors import Colors as colors
 
 block_size = 1024
 

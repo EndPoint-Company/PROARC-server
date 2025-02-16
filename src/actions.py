@@ -3,7 +3,7 @@ import psycopg2
 import json
 import config.database as database
 import config.database as database
-from utils.colors import Colors as colors
+from src.utils.colors import Colors as colors
 
 # Para saber qual função chamar, veja o dicionário ACTIONS no final do arquivo
 
