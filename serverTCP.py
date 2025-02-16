@@ -66,7 +66,6 @@ def send_request_to_db(request):
     
     cursor = conn.cursor()
     cursor.execute(request)
-    a = cursor.fetchall()
 
     conn.commit()
     cursor.close()
@@ -80,9 +79,9 @@ def send_salt_to_client(client_socket):
      
     cursor = conn.cursor()
     cursor.execute("SELECT salt FROM Usuarios")
-    a = cursor.fetchall()
+    result = cursor.fetchall()
 
-    data = json.dumps([tuple(row) for row in a])
+    data = json.dumps([tuple(row) for row in result])
 
     client_socket.send(data.encode("utf-8"))
     
@@ -96,9 +95,9 @@ def check_password(hashed_password):
         
     cursor = conn.cursor()
     cursor.execute("SELECT hash_and_salt FROM Usuarios")
-    a = cursor.fetchall()
+    result = cursor.fetchall()
 
-    for hash_and_salt in a:
+    for hash_and_salt in result:
         print("hash_and_salt: " + hash_and_salt[0] + " - " + hashed_password)
         if hash_and_salt[0] == hashed_password:
             return True
