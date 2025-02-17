@@ -53,11 +53,17 @@ def action_insert_reclamacao(request):
         return {"status":"faltando reclamante"} 
     if reclamacao["Reclamados"] == None:
         return {"status":"faltando reclamado"}
+    
     motivo_nome = reclamacao["Motivo"]["Nome"]
+    print(motivo_nome)
     motivo_id = execute_query(QUERIES["get_motivo_id_por_nome"], (motivo_nome,))[0][0]
+    print(motivo_id)
 
     reclamante_cpf = reclamacao["Reclamante"]["Cpf"]
+    print(reclamante_cpf)
     reclamante_id = execute_query(QUERIES["get_reclamante_por_cpf"], (reclamante_cpf,))
+    print (reclamante_id)
+
     if not bool(reclamante_id):
         execute_query(
             QUERIES["insert_reclamante"],
@@ -70,14 +76,26 @@ def action_insert_reclamacao(request):
             ),
         )
     reclamante_id = execute_query(QUERIES["get_reclamante_por_cpf"], (reclamante_cpf,))[0][0]
+    print(reclamante_id)
      
     procurador_id = None
-    if reclamacao["Procurador"] in reclamacao:
-        procurador_cpf = reclamacao["Procurador"]["Cpf"]
-        procurador_id = execute_query(QUERIES["get_procurador_por_cpf"], (procurador_cpf,))
-        if not bool(procurador_id):
-            execute_query(QUERIES["insert_procurador"], (reclamacao["Procurador"]["Nome"], reclamacao["Procurador"]["Rg"], reclamacao["Procurador"]["Cpf"], reclamacao["Procurador"]["Telefone"], reclamacao["Procurador"]["Email"]))
-        procurador_id = execute_query(QUERIES["get_procurador_por_cpf"], (procurador_cpf,))[0][0]
+    if reclamacao.get("Procurador"):  # Verifica se "Procurador" existe e não é None
+        procurador_cpf = reclamacao["Procurador"].get("Cpf")
+    
+        if procurador_cpf:  # Verifica se o CPF do procurador não é None
+            procurador_id_result = execute_query(QUERIES["get_procurador_por_cpf"], (procurador_cpf,))
+        
+            if not procurador_id_result:  # Se não encontrou, insere o procurador
+                execute_query(QUERIES["insert_procurador"], (
+                    reclamacao["Procurador"]["Nome"], 
+                    reclamacao["Procurador"]["Rg"], 
+                    procurador_cpf, 
+                    reclamacao["Procurador"]["Telefone"], 
+                    reclamacao["Procurador"]["Email"]
+                ))
+                procurador_id_result = execute_query(QUERIES["get_procurador_por_cpf"], (procurador_cpf,))
+            procurador_id = procurador_id_result[0][0]
+    print(procurador_id)
 
     reclamados_ids = []
     for i in range(len(reclamacao["Reclamados"])):
