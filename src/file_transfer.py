@@ -16,7 +16,9 @@ def handle_client_ftr(client_socket: socket.socket):
 
         if os.path.exists(file_path):
             with open(file_path, "rb") as file:
+                print("data: ", end="")
                 while (chunk := file.read(block_size)):
+                    print(chunk, end="")
                     client_socket.send(chunk)
             print("[FT] File sent successfully.")
 
@@ -44,8 +46,10 @@ def handle_client_fts(client_socket: socket.socket):
             client_socket.settimeout(1000)
             print("[+] Receiving file...")
             with open(os.path.join(file_path, arquivo), "wb") as file:
+                    print("data: ", end="")
                     while True:
                         data = client_socket.recv(block_size)
+                        print(data, end="")
                         if not data:
                             break
                         file.write(data)

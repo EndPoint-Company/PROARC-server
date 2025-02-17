@@ -45,6 +45,7 @@ def execute_query(query, params=()):
 def action_insert_reclamacao(request):
     # todo o negocio que ambas tem em comum
     reclamacao = request.get("reclamacao")
+    print(f"[DB] Reclamação: {reclamacao}")
 
     if reclamacao["Motivo"] == None:
         return {"status": "faltando motivo"}  
@@ -124,14 +125,12 @@ def action_update_reclamacao(request):
         return {"status":"faltando reclamado"}
     
     situacao_old_result = execute_query(QUERIES["get_reclamacao_situacao_por_titulo"], (titulo,))[0][0]
-    print(situacao_old_result)
 
     # Obter o ID da reclamação
     reclamacao_id_result = execute_query(QUERIES["get_reclamacao_id_por_titulo"], (titulo,))
     if not reclamacao_id_result:
         return {"status": "reclamacao_nao_encontrada"}
     reclamacao_id = reclamacao_id_result[0][0]
-    print(reclamacao_id)
 
     # Atualizar o motivo
     motivo_nome = reclamacao["Motivo"]["Nome"] 
@@ -140,7 +139,6 @@ def action_update_reclamacao(request):
         execute_query(QUERIES["insert_motivo"], (motivo_nome,))
         motivo_id_result = execute_query(QUERIES["get_motivo_id_por_nome"], (motivo_nome,))
     motivo_id = motivo_id_result[0][0]
-    print(motivo_id)
 
     # Atualizar o reclamante
     reclamante_cpf = reclamacao["Reclamante"]["Cpf"]
@@ -158,7 +156,6 @@ def action_update_reclamacao(request):
         )
         reclamante_id_result = execute_query(QUERIES["get_reclamante_por_cpf"], (reclamante_cpf,))
     reclamante_id = reclamante_id_result[0][0]
-    print(reclamante_id)
 
     # Atualizar o procurador (se existir)
     procurador_id = None
