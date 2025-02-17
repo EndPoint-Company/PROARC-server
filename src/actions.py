@@ -656,21 +656,28 @@ def action_estatistica_reclamacoes_por_mes_ano_atual(request):
     return {"estatisticas": estatisticas}
 
 
+def action_estatistica_motivos_mais_usados(request):    
+    resultados = execute_query(QUERIES["estatistica_motivos_mais_usados"])
+
+    return {"estatisticas": resultados}
+
+
+def action_get_all_usuarios(request):
+    results = execute_query(QUERIES["get_all_usuarios"])
+
+    return {"usuarios": results}
+
+
+def action_insert_usuario(request):
+    usuario = request.get("usuario")
+    execute_query(QUERIES["insert_usuario"], (usuario["Nome"], usuario["Cargo"], usuario["HashSalt"], usuario["Salt"]))
+
+    return {"status": "ok"}
 
 
 QUERIES = {
     "get_reclamacao_id_por_titulo": "SELECT reclamacao_id FROM Reclamacoes WHERE titulo = (%s)",
-    "get_reclamado_id_por_addr": """
-        SELECT reclamado_id 
-        FROM Reclamados 
-        WHERE numero_addr = (%s) 
-          AND logradouro_addr = (%s) 
-          AND bairro_addr = (%s) 
-          AND cidade_addr = (%s) 
-          AND uf_addr = (%s) 
-          AND cep = (%s)
-        LIMIT 1
-    """,
+    "get_reclamado_id_por_addr": "SELECT reclamado_id FROM Reclamados WHERE numero_addr = (%s) AND logradouro_addr = (%s) AND bairro_addr = (%s) AND cidade_addr = (%s) AND uf_addr = (%s) AND cep = (%s) LIMIT 1",
     "get_reclamado_id_por_cnpj": "SELECT reclamado_id FROM Reclamados WHERE cnpj = (%s)",
     "get_reclamacao_por_titulo": "SELECT * FROM reclamacoes where titulo = (%s)",
     "get_reclamante_por_cpf": "SELECT reclamante_id FROM Reclamantes WHERE cpf = (%s)",
@@ -742,6 +749,7 @@ ACTIONS = {
     "get_reclamante_por_cpf": action_get_reclamante_por_cpf,
     "get_reclamante_por_rg": action_get_reclamante_por_rg,
     "get_all_reclamantes": action_get_all_reclamantes,
+    "get_all_usuarios": action_get_all_usuarios,
     "insert_reclamante": action_insert_reclamante,
     "update_reclamante_por_id": action_update_reclamante_por_id,
     "delete_reclamante_por_id": action_delete_reclamante_por_id,
@@ -760,5 +768,8 @@ ACTIONS = {
     "delete_motivo_por_nome": action_delete_motivo_por_nome,
     "update_motivo_por_id": action_update_motivo_por_id,
     "count_motivos": action_count_motivos,
-    "estatistica_mais_reclamados": action_estatistica_mais_reclamados
+    "estatistica_mais_reclamados": action_estatistica_mais_reclamados,
+    "estatistica_motivos_mais_usados": action_estatistica_motivos_mais_usados,
+    "estatistica_reclamacoes_por_mes_ano_atual": action_estatistica_reclamacoes_por_mes_ano_atual,
+    "insert_usuario": action_insert_usuario
 }
