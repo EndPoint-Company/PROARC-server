@@ -45,7 +45,7 @@ def execute_query(query, params=()):
 def action_insert_reclamacao(request):
     # todo o negocio que ambas tem em comum
     reclamacao = request.get("reclamacao")
-    print(f"[DB] Reclamação: {reclamacao}")
+    print(f"[DB] Reclamação: {json.dumps(json.loads(reclamacao), indent=4)}")
 
     if reclamacao["Motivo"] == None:
         return {"status": "faltando motivo"}  
@@ -402,7 +402,7 @@ def aux_all_recl(request, reclamacoes):
     # Serializar JSON sem erro de referência circular
     return_json = orjson.dumps({"reclamacoes": reclamacoes_completas}, default=serialize_datetime).decode()
 
-    print(f"[DB] {return_json}")
+    print(f"[DB] {json.dumps(json.loads(return_json), indent=4)}")
 
     return return_json
 
@@ -680,6 +680,18 @@ def action_estatistica_motivos_mais_usados(request):
     return {"estatisticas": resultados}
 
 
+def action_estatistica_reclamacoes_por_criador(request):
+    resultados = execute_query(QUERIES["estatistica_reclamacoes_por_criador"])
+
+    return {"estatisticas": resultados}
+
+
+def action_estatistica_reclamacoes_por_situacao(request):
+    resultados = execute_query(QUERIES["estatistica_reclamacoes_por_situacao"])
+
+    return {"estatisticas": resultados}
+
+
 def action_get_all_usuarios(request):
     results = execute_query(QUERIES["get_all_usuarios"])
 
@@ -789,5 +801,7 @@ ACTIONS = {
     "estatistica_mais_reclamados": action_estatistica_mais_reclamados,
     "estatistica_motivos_mais_usados": action_estatistica_motivos_mais_usados,
     "estatistica_reclamacoes_por_mes_ano_atual": action_estatistica_reclamacoes_por_mes_ano_atual,
-    "insert_usuario": action_insert_usuario
+    "insert_usuario": action_insert_usuario,
+    "estatistica_reclamacoes_por_criador": action_estatistica_reclamacoes_por_criador,
+    "estatistica_reclamacoes_por_situacao": action_estatistica_reclamacoes_por_situacao,
 }
