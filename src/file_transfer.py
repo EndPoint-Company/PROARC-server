@@ -24,7 +24,7 @@ def handle_client_ftr(client_socket: socket.socket):
                 while (chunk := file.read(block_size)):
                     print(chunk, end="")
                     client_socket.send(chunk)
-            print("[FT] File sent successfully.")
+            print("\n[FT] File sent successfully.")
 
         else:
             print(f"{colors.LIGHT_RED}[FT] File not found: {file_path}{colors.END}")
@@ -60,7 +60,7 @@ def handle_client_fts(client_socket: socket.socket):
                         if not data:
                             break
                         file.write(data)
-                    print(f"{colors.LIGHT_GREEN}[FT] File received successfully.{colors.END}")     
+                    print(f"{colors.LIGHT_GREEN}\n[FT] File received successfully.{colors.END}")     
         except Exception as e:
             print(f"{colors.LIGHT_RED}[FT] Error in handle_client_fts: {e}{colors.END}")
 

@@ -113,7 +113,7 @@ while True:
     client, addr = server.accept() 
     print(f"{colors.LIGHT_GREEN}[+] Accepted connection from: {addr[0]}:{addr[1]}{colors.END}")
 
-    r = client.recv(8).decode("utf-8")
+    r = client.recv(4).decode("utf-8")
 
     print(f"{colors.LIGHT_BLUE}[+] Starting to process a request of type: {r}{colors.END}")
 
