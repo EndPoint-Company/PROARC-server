@@ -14,7 +14,7 @@ def handle_client_ftr(client_socket: socket.socket):
         if platform == "win32":
             file_path = os.path.join("tests", "home", "recl", titulo, arquivo)
         else:
-            file_path = os.path.join(os.sep, "home", "~", "recl", titulo, arquivo)
+            file_path = os.path.join(os.sep, "home", "proarc", "recl", titulo, arquivo)
 
         print(f"{colors.LIGHT_BLUE}[FT] file_path: {file_path}{colors.END}")
 
@@ -42,7 +42,7 @@ def handle_client_fts(client_socket: socket.socket):
         if platform == "win32":
             file_path = os.path.join("tests", "home", "recl", titulo)
         else:
-            file_path = os.path.join(os.sep, "home", "~", "recl", titulo)
+            file_path = os.path.join(os.sep, "home", "proarc", "recl", titulo)
 
         print(f"{colors.LIGHT_BLUE}[FT] file_path: {file_path}{colors.END}")
 
