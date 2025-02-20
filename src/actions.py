@@ -43,9 +43,8 @@ def execute_query(query, params=()):
 
 
 def action_insert_reclamacao(request):
-    # todo o negocio que ambas tem em comum
     reclamacao = request.get("reclamacao")
-    print(f"[DB] Reclamação: {json.dumps(json.loads(reclamacao), indent=4)}")
+   # print(f"[DB] Reclamação: {json.dumps(json.loads(reclamacao), indent=4)}")
 
     if reclamacao["Motivo"] == None:
         return {"status": "faltando motivo"}  
