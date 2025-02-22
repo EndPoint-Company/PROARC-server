@@ -16,7 +16,6 @@ WORKDIR /server
 RUN pip3 install orjson
 RUN pip3 install psycopg2
 
-# Expose port 2000 (if required)
 EXPOSE 9999
 
 # Specify the command to run the Python application
