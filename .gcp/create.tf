@@ -1,7 +1,7 @@
 provider "google" {
   credentials = "${file("credentials.json")}"
   project     = "proarc-451622"
-  region      = "us-central1-a"
+  region      = "southamerica-east1-c"
 }
 
 module "firewall_rules" {
@@ -29,12 +29,12 @@ module "firewall_rules" {
 
 resource "google_compute_instance" "default" {
   name         = "my-vm-01"
-  machine_type = "n1-standard-1"
-  zone         = "us-central1-a"
+  machine_type = "e2-micro"
+  zone         = "southamerica-east1-c"
 
   boot_disk {
     initialize_params {
-      image = "ubuntu-minimal-2210-kinetic-amd64-v20230126"
+      image = "ubuntu-pro-2404-noble-amd64-v20241115"
     }
   }
 

@@ -1,17 +1,20 @@
-FROM amazonlinux:latest
+FROM ubuntu:latest
 
 # Update packages and install necessary dependencies
-RUN yum update -y && \
-    yum install -y git python3-pip
+RUN sudo apt update    
+RUN sudo apt upgrade      
+RUN sudo apt full-upgrade 
+RUN sudo apt autoremove    
 
 # Clone the repository
-RUN git clone https://github.com/Sada-Siva-Reddy07/fish.git /fish
+RUN git clone https://github.com/EndPoint-Company/PROARC-server /server
 
 # Set the working directory
-WORKDIR /fish
+WORKDIR /server
 
 # Install Python dependencies
-RUN pip3 install -r requirements.txt
+RUN pip3 install orjson
+RUN pip3 install psycopg2
 
 # Expose port 2000 (if required)
 EXPOSE 9999
