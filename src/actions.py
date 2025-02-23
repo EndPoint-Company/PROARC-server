@@ -718,6 +718,12 @@ def action_count_reclamacoes_enel_ano(request):
     return {"count": quantidade[0][0]}
 
 
+def action_get_ultimas_cinco_reclamacoes(request):
+    results = execute_query(QUERIES["get_ultimas_cinco_reclamacoes"])
+
+    return {"reclamacoes": results}
+
+
 QUERIES = {
     "get_reclamacao_id_por_titulo": "SELECT reclamacao_id FROM Reclamacoes WHERE titulo = (%s)",
     "get_reclamado_id_por_addr": "SELECT reclamado_id FROM Reclamados WHERE numero_addr = (%s) AND logradouro_addr = (%s) AND bairro_addr = (%s) AND cidade_addr = (%s) AND uf_addr = (%s) AND cep = (%s) LIMIT 1",
@@ -776,7 +782,8 @@ QUERIES = {
     "estatistica_reclamacoes_por_situacao": "SELECT situacao, COUNT(*) AS total FROM Reclamacoes GROUP BY situacao ORDER BY total DESC",
     "get_all_usuarios": "SELECT nome, cargo FROM Usuarios",
     "update_usuario_hash": "UPDATE Usuarios SET hash_and_salt = (%s), salt = (%s) WHERE nome = (%s)",
-    "delete_usuario_por_id": "DELETE FROM Usuarios WHERE usuario_id = (%s)"
+    "delete_usuario_por_id": "DELETE FROM Usuarios WHERE usuario_id = (%s)",
+    "get_ultimas_cinco_reclamacoes_criadas": "SELECT titulo, situacao FROM Reclamacoes ORDER BY created_at DESC LIMIT 5"
 }
 
 ACTIONS = {
@@ -820,5 +827,6 @@ ACTIONS = {
     "estatistica_reclamacoes_por_criador": action_estatistica_reclamacoes_por_criador,
     "estatistica_reclamacoes_por_situacao": action_estatistica_reclamacoes_por_situacao,
     "count_reclamacoes_enel_ano": action_count_reclamacoes_enel_ano,
-    "count_reclamacoes_geral_ano": action_count_reclamacoes_geral_ano
+    "count_reclamacoes_geral_ano": action_count_reclamacoes_geral_ano,
+    "get_ultimas_cinco_reclamacoes": action_get_ultimas_cinco_reclamacoes
 }
