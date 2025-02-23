@@ -720,7 +720,7 @@ def action_count_reclamacoes_enel_ano(request):
 
 def action_get_ultimas_cinco_reclamacoes(request):
     quantidade = request.get("quantidade", 5)
-    results = execute_query(QUERIES["get_ultimas_cinco_reclamacoes"], (quantidade,))
+    results = execute_query(QUERIES["get_ultimas_p_reclamacoes"], (quantidade,))
 
     return {"reclamacoes": results}
 
