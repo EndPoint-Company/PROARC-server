@@ -719,7 +719,8 @@ def action_count_reclamacoes_enel_ano(request):
 
 
 def action_get_ultimas_cinco_reclamacoes(request):
-    results = execute_query(QUERIES["get_ultimas_cinco_reclamacoes"])
+    quantidade = request.get("quantidade", 5)
+    results = execute_query(QUERIES["get_ultimas_cinco_reclamacoes"], (quantidade,))
 
     return {"reclamacoes": results}
 
@@ -783,7 +784,7 @@ QUERIES = {
     "get_all_usuarios": "SELECT nome, cargo FROM Usuarios",
     "update_usuario_hash": "UPDATE Usuarios SET hash_and_salt = (%s), salt = (%s) WHERE nome = (%s)",
     "delete_usuario_por_id": "DELETE FROM Usuarios WHERE usuario_id = (%s)",
-    "get_ultimas_cinco_reclamacoes_criadas": "SELECT titulo, situacao FROM Reclamacoes ORDER BY created_at DESC LIMIT 5"
+    "get_ultimas_p_reclamacoes_criadas": "SELECT titulo, situacao FROM Reclamacoes ORDER BY created_at DESC LIMIT (%s)"
 }
 
 ACTIONS = {
