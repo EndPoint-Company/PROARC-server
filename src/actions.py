@@ -656,7 +656,9 @@ def action_count_motivos(request):
 
 def action_estatistica_mais_reclamados(request):
     quantidade = request.get("quantidade", 5)
+    print(quantidade)
     results = execute_query(QUERIES["estatistica_mais_reclamados"], (quantidade,))
+    print(results)
     return {"reclamados": results}
 
 
@@ -743,7 +745,7 @@ QUERIES = {
     "update_reclamacao": "UPDATE Reclamacoes SET motivo_id = (%s), reclamante_id = (%s), procurador_id = (%s), titulo = (%s), situacao = (%s), caminho_dir = (%s), data_abertura = (%s), ultima_mudanca = CURRENT_TIMESTAMP, criador = (%s) WHERE reclamacao_id = (%s);",
     "delete_reclamados_por_reclamacao": "DELETE FROM RelacaoProcessoReclamado WHERE reclamacao_id = %s;",
     "insert_relacao_reclamacao_reclamado": "INSERT INTO RelacaoProcessoReclamado (reclamacao_id, reclamado_id) VALUES (%s, %s);",
-    "estatisticas_mais_reclamados": "SELECT r.nome, COUNT(rpr.reclamacao_id) AS total_reclamacoes FROM RelacaoProcessoReclamado AS rpr JOIN Reclamados AS r ON rpr.reclamado_id = r.reclamado_id GROUP BY r.reclamado_id, r.nome ORDER BY total_reclamacoes DESC LIMIT (%s);",
+    "estatistica_mais_reclamados": "SELECT r.nome, COUNT(rpr.reclamacao_id) AS total_reclamacoes FROM RelacaoProcessoReclamado AS rpr JOIN Reclamados AS r ON rpr.reclamado_id = r.reclamado_id GROUP BY r.reclamado_id, r.nome ORDER BY total_reclamacoes DESC LIMIT (%s);",
     "estatistica_motivos_mais_usados": "SELECT m.nome AS motivo, COUNT(r.reclamacao_id) AS total_reclamacoes FROM Reclamacoes r JOIN Motivos m ON r.motivo_id = m.motivo_id GROUP BY m.nome ORDER BY total_reclamacoes DESC;",
     "estatistica_reclamacoes_por_mes_ano_atual": "SELECT EXTRACT(MONTH FROM data_abertura) AS mes, COUNT(reclamacao_id) AS total_reclamacoes FROM Reclamacoes WHERE EXTRACT(YEAR FROM data_abertura) = EXTRACT(YEAR FROM CURRENT_DATE) GROUP BY mes ORDER BY mes;",
     "estatistica_reclamacoes_por_mes_ano": "SELECT EXTRACT(MONTH FROM data_abertura) AS mes, COUNT(reclamacao_id) AS total_reclamacoes FROM Reclamacoes WHERE EXTRACT(YEAR FROM data_abertura) = (%s) GROUP BY mes ORDER BY mes;",
@@ -758,7 +760,7 @@ QUERIES = {
     "check_titulo_existe": "SELECT EXISTS(SELECT 1 FROM Reclamacoes WHERE titulo = (%s))",
     "estatistica_reclamacoes_por_criador": "SELECT criador, COUNT(*) AS total FROM Reclamacoes GROUP BY criador ORDER BY total DESC",
     "estatistica_reclamacoes_por_situacao": "SELECT situacao, COUNT(*) AS total FROM Reclamacoes GROUP BY situacao ORDER BY total DESC",
-    "get_all_usuarios": "SELECT * FROM Usuarios",
+    "get_all_usuarios": "SELECT nome, cargo FROM Usuarios",
     "update_usuario_hash": "UPDATE Usuarios SET hash_and_salt = (%s), salt = (%s) WHERE nome = (%s)",
     "delete_usuario_por_id": "DELETE FROM Usuarios WHERE usuario_id = (%s)"
 }
