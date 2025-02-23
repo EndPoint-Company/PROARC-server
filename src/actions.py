@@ -706,6 +706,18 @@ def action_insert_usuario(request):
     return {"status": "ok"}
 
 
+def action_count_reclamacoes_geral_ano(request):
+    quantidade = execute_query(QUERIES["count_reclamacoes_geral_ano"])
+
+    return {"count": quantidade[0][0]}
+
+
+def action_count_reclamacoes_enel_ano(request):
+    quantidade = execute_query(QUERIES["count_reclamacoes_enel_ano"])
+
+    return {"count": quantidade[0][0]}
+
+
 QUERIES = {
     "get_reclamacao_id_por_titulo": "SELECT reclamacao_id FROM Reclamacoes WHERE titulo = (%s)",
     "get_reclamado_id_por_addr": "SELECT reclamado_id FROM Reclamados WHERE numero_addr = (%s) AND logradouro_addr = (%s) AND bairro_addr = (%s) AND cidade_addr = (%s) AND uf_addr = (%s) AND cep = (%s) LIMIT 1",
@@ -735,7 +747,9 @@ QUERIES = {
     "delete_motivo_por_nome": "DELETE FROM Motivos WHERE nome = (%s)",
     "count_reclamacoes": "SELECT COUNT(*) FROM Reclamacoes",
     "count_reclamacoes_enel": "SELECT COUNT(*) FROM ReclamacoesEnel",
-    "count_reclamacoes_geral": "SELECT COUNT(*) FROM ReclamacoesGeral",
+    "count_reclamacoes_geral": "SELECT COUNT(*) FROM ReclamacoesEnel",
+    "count_reclamacoes_enel_ano": "SELECT SUM((DATE_PART('year', Reclamacoes.data_abertura) = DATE_PART('year', CURRENT_DATE))::int) FROM ReclamacoesEnel JOIN Reclamacoes ON ReclamacoesEnel.reclamacao_id = Reclamacoes.reclamacao_id",
+    "count_reclamacoes_geral_ano": "SELECT SUM((DATE_PART('year', Reclamacoes.data_abertura) = DATE_PART('year', CURRENT_DATE))::int) FROM ReclamacoesGeral JOIN Reclamacoes ON ReclamacoesGeral.reclamacao_id = Reclamacoes.reclamacao_id",
     "count_reclamantes": "SELECT COUNT(*) FROM Reclamantes",
     "count_reclamados": "SELECT COUNT(*) FROM Reclamados",
     "count_motivos": "SELECT COUNT(*) FROM Motivos",
@@ -805,4 +819,6 @@ ACTIONS = {
     "insert_usuario": action_insert_usuario,
     "estatistica_reclamacoes_por_criador": action_estatistica_reclamacoes_por_criador,
     "estatistica_reclamacoes_por_situacao": action_estatistica_reclamacoes_por_situacao,
+    "count_reclamacoes_enel_ano": action_count_reclamacoes_enel_ano,
+    "count_reclamacoes_geral_ano": action_count_reclamacoes_geral_ano
 }
