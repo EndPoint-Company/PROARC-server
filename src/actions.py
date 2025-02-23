@@ -718,7 +718,7 @@ def action_count_reclamacoes_enel_ano(request):
     return {"count": quantidade[0][0]}
 
 
-def action_get_ultimas_cinco_reclamacoes(request):
+def action_get_ultimas_p_reclamacoes(request):
     quantidade = request.get("quantidade", 5)
     results = execute_query(QUERIES["get_ultimas_p_reclamacoes"], (quantidade,))
 
@@ -829,5 +829,5 @@ ACTIONS = {
     "estatistica_reclamacoes_por_situacao": action_estatistica_reclamacoes_por_situacao,
     "count_reclamacoes_enel_ano": action_count_reclamacoes_enel_ano,
     "count_reclamacoes_geral_ano": action_count_reclamacoes_geral_ano,
-    "get_ultimas_cinco_reclamacoes": action_get_ultimas_cinco_reclamacoes
+    "get_ultimas_p_reclamacoes": action_get_ultimas_p_reclamacoes
 }
