@@ -66,3 +66,19 @@ def handle_client_fts(client_socket: socket.socket):
 
         finally:
             client_socket.close()
+
+
+def list_files_in_directory(client_socket, titulo):
+    titulo = client_socket.recv(block_size).decode("utf-8").strip()
+
+    if platform == "win32":
+        file_path = os.path.join("tests", "home", "recl", titulo)
+    else:
+        file_path = os.path.join(os.sep, "home", "proarc", "recl", titulo)
+
+    try:
+        files = os.listdir(file_path)
+        return files
+    except Exception as e:
+        print(f"{colors.LIGHT_RED}[FT] Error in list_files_in_directory: {e}{colors.END}")
+        return []
