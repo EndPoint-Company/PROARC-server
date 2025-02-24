@@ -720,7 +720,7 @@ def action_count_reclamacoes_enel_ano(request):
 
 def action_get_ultimas_p_reclamacoes(request):
     quantidade = request.get("quantidade", 5)
-    results = execute_query(QUERIES["get_ultimas_p_reclamacoes"], (quantidade,))
+    results = execute_query(QUERIES["get_ultimas_p_reclamacoes_criadas"], (quantidade,))
 
     return {"reclamacoes": results}
 
@@ -755,8 +755,8 @@ QUERIES = {
     "count_reclamacoes": "SELECT COUNT(*) FROM Reclamacoes",
     "count_reclamacoes_enel": "SELECT COUNT(*) FROM ReclamacoesEnel",
     "count_reclamacoes_geral": "SELECT COUNT(*) FROM ReclamacoesEnel",
-    "count_reclamacoes_enel_ano": "SELECT SUM((DATE_PART('year', Reclamacoes.data_abertura) = DATE_PART('year', CURRENT_DATE))::int) FROM ReclamacoesEnel JOIN Reclamacoes ON ReclamacoesEnel.reclamacao_id = Reclamacoes.reclamacao_id",
-    "count_reclamacoes_geral_ano": "SELECT SUM((DATE_PART('year', Reclamacoes.data_abertura) = DATE_PART('year', CURRENT_DATE))::int) FROM ReclamacoesGeral JOIN Reclamacoes ON ReclamacoesGeral.reclamacao_id = Reclamacoes.reclamacao_id",
+    "count_reclamacoes_enel_ano": "SELECT MAX(reclamacao_id) AS ultimo_reclamacao_id FROM Reclamacoes",
+    "count_reclamacoes_geral_ano": "SELECT MAX(reclamacao_id) AS ultimo_reclamacao_id FROM Reclamacoes",
     "count_reclamantes": "SELECT COUNT(*) FROM Reclamantes",
     "count_reclamados": "SELECT COUNT(*) FROM Reclamados",
     "count_motivos": "SELECT COUNT(*) FROM Motivos",
@@ -829,5 +829,5 @@ ACTIONS = {
     "estatistica_reclamacoes_por_situacao": action_estatistica_reclamacoes_por_situacao,
     "count_reclamacoes_enel_ano": action_count_reclamacoes_enel_ano,
     "count_reclamacoes_geral_ano": action_count_reclamacoes_geral_ano,
-    "get_ultimas_p_reclamacoes": action_get_ultimas_p_reclamacoes
+    "get_ultimas_p_reclamacoes_criadas": action_get_ultimas_p_reclamacoes
 }
